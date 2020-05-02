@@ -60,7 +60,7 @@ def left_calendar():
     black_draw.text((10, EPD_HEIGHT - 30), 'Updated: ' + time.strftime('%H:%M:%S'), font=font_status, fill=255)
 
 
-def debug_image():
+def debug():
     debug_image = Image.new('RGB', (EPD_WIDTH, EPD_HEIGHT), (255, 255, 255))
     pixels = debug_image.load()
 
@@ -71,6 +71,7 @@ def debug_image():
             elif black_image.getpixel((i, j)) == 0:
                 pixels[i, j] = (0, 0, 0)
 
+    debug_image.save('debug.bmp')
     debug_image.show()
 
 
@@ -80,6 +81,4 @@ if __name__ == '__main__':
     black_image.save('black.bmp')
     red_image.save('red.bmp')
 
-    # red_image.show()
-
-    debug_image()
+    debug()
