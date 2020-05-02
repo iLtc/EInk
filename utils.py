@@ -20,7 +20,7 @@ def open_weather_map_icon(code):
 
     canvas.paste(image, mask=image)
 
-    canvas.thumbnail((canvas.size[0] * 0.75, canvas.size[1] * 0.75))
+    # canvas.thumbnail((canvas.size[0] * 0.8, canvas.size[1] * 0.8))
 
     # canvas.show()
 
