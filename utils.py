@@ -1,18 +1,26 @@
 import requests
 from PIL import Image
 from io import BytesIO
+from os import path
 
 
 def open_weather_map_icon(code):
-    icon = requests.get('https://openweathermap.org/img/wn/{}@2x.png'.format(code))
+    if path.exists('icons/{}@2x.png'.format(code)):
+        image = Image.open('icons/{}@2x.png'.format(code))
+    else:
+        icon = requests.get('https://openweathermap.org/img/wn/{}@2x.png'.format(code))
 
-    image = Image.open(BytesIO(icon.content))
+        image = Image.open(BytesIO(icon.content))
+
+        image.save('icons/{}@2x.png'.format(code))
 
     # image.show()
 
     canvas = Image.new('RGB', image.size, (255, 255, 255))
 
     canvas.paste(image, mask=image)
+
+    canvas.thumbnail((canvas.size[0] * 0.75, canvas.size[1] * 0.75))
 
     # canvas.show()
 
