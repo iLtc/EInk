@@ -24,7 +24,10 @@ WEATHER_LAT = 40.7305044
 WEATHER_LON = -74.0343007
 
 GOOGLE_CALENDAR_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
-GOOGLE_CALENDAR_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT)
+GOOGLE_CALENDAR_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
+
+TASK_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
+TASK_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
 
 red_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
 black_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
@@ -239,6 +242,80 @@ def right_top_calendar():
     return red_layer, black_layer
 
 
+def right_middle_task():
+    data = requests.get(
+        'https://api.todoist.com/rest/v1/projects',
+        headers={'Authorization': config.TODOIST_TOKEN}).json()
+
+    projects = {}
+
+    for project in data:
+        projects[project['id']] = project
+
+    data = requests.get(
+        'https://api.todoist.com/rest/v1/tasks',
+        headers={'Authorization': config.TODOIST_TOKEN}).json()
+
+    tasks = []
+
+    for task in data:
+        if 'due' in task:
+            project_title = projects[task['project_id']]['name']
+
+            if 'parent' in projects[task['project_id']]:
+                project_title = projects[projects[task['project_id']]['parent']]['name'] + ' > ' + project_title
+
+            task['project'] = project_title
+
+            tasks.append(task)
+
+    tasks.sort(key=lambda e: e['due']['date'])
+
+    today = NOW.strftime('%Y-%m-%d')
+
+    red_layer = Image.new('1', (TASK_WIDTH, int(TASK_HEIGHT)), 1)
+    black_layer = Image.new('1', (TASK_WIDTH, int(TASK_HEIGHT)), 1)
+
+    red_layer_draw = ImageDraw.Draw(red_layer)
+    black_layer_draw = ImageDraw.Draw(black_layer)
+
+    font = ImageFont.truetype('fonts/timr45w.ttf', 17)
+    h_offset = -5
+
+    for task in tasks:
+        date = task['due']['string']
+        text = task['content']
+        project = '[{}]'.format(task['project'])
+
+        w, h = font.getsize(date)
+        x = 0
+        y = h / 2 + h_offset
+
+        if task['due']['date'] < today:
+            red_layer_draw.text((x, y), date, font=font, fill=0)
+        else:
+            black_layer_draw.text((x, y), date, font=font, fill=0)
+
+        black_layer_draw.text((55, y), text, font=font, fill=0)
+
+        w, h = font.getsize(project)
+        x = TASK_WIDTH - w
+        y = h / 2 + h_offset
+
+        black_layer_draw.text((x, y), project, font=font, fill=0)
+
+        h_offset += h + 12
+
+        black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
+
+        h_offset += -5
+
+        if h_offset + h >= TASK_HEIGHT:
+            break
+
+    return red_layer, black_layer
+
+
 def s3():
     files = ['red.bmp', 'black.bmp']
 
@@ -299,6 +376,11 @@ def main():
     red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
     black_image.paste(black_layer, (CALENDAR_WIDTH + 1, 0))
 
+    red_layer, black_layer = right_middle_task()
+
+    red_image.paste(red_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
+    black_image.paste(black_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
+
     black_image.save('../black.bmp')
     red_image.save('../red.bmp')
 
@@ -307,3 +389,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
