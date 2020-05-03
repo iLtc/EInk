@@ -286,7 +286,7 @@ def debug():
     debug_image.show()
 
 
-if __name__ == '__main__':
+def main():
     left_calendar()
 
     red_layer, black_layer = right_bottom_weather()
@@ -299,9 +299,11 @@ if __name__ == '__main__':
     red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
     black_image.paste(black_layer, (CALENDAR_WIDTH + 1, 0))
 
-    black_image.save('black.bmp')
-    red_image.save('red.bmp')
+    black_image.save('../black.bmp')
+    red_image.save('../red.bmp')
 
-    # debug()
+    # s3()
 
-    s3()
+
+if __name__ == '__main__':
+    main()
