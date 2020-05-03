@@ -5,6 +5,11 @@ import time
 import requests
 import os
 import utils
+import config
+from google.oauth2 import service_account
+import googleapiclient.discovery
+
+from pprint import pprint
 
 EPD_WIDTH = 800
 EPD_HEIGHT = 480
@@ -17,13 +22,16 @@ WEATHER_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
 WEATHER_LAT = 40.7305044
 WEATHER_LON = -74.0343007
 
+GOOGLE_CALENDAR_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
+GOOGLE_CALENDAR_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT)
+
 red_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
 black_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
 
 red_draw = ImageDraw.Draw(red_image)
 black_draw = ImageDraw.Draw(black_image)
 
-NOW = datetime.datetime.now()
+NOW = datetime.datetime.now(datetime.timezone.utc).astimezone()
 
 
 def left_calendar():
@@ -82,7 +90,7 @@ def right_bottom_weather():
         'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&units=imperial&appid={}'.format(
             WEATHER_LAT,
             WEATHER_LON,
-            os.getenv('OPENWEATHERMAP_APPID', '')
+            config.OPENWEATHERMAP_APPID
         )).json()
 
     weather_current = weather_data['current']
@@ -161,6 +169,75 @@ def weather_card(icon, title, temp, subtitle):
     return red_layer, black_layer
 
 
+def right_top_calendar():
+    SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
+    credentials = service_account.Credentials.from_service_account_file(config.SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+
+    calendar_service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
+
+    events = []
+
+    for name, cal in config.GOOGLE_CALENDARID.items():
+        data = calendar_service.events().list(
+            calendarId=cal,
+            orderBy='startTime',
+            singleEvents=True,
+            timeMin=NOW.isoformat(),
+            timeMax=(NOW + datetime.timedelta(days=1)).isoformat()
+        ).execute()
+
+        for event in data['items']:
+            event['cal'] = name
+
+            events.append(event)
+
+    events.sort(key=lambda e: e['start']['dateTime'])
+
+    results = []
+
+    for event in events:
+        start = datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
+        end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
+
+        results.append([
+            event['cal'],
+            event['summary'],
+            '{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute)
+        ])
+
+    red_layer = Image.new('1', (GOOGLE_CALENDAR_WIDTH, int(GOOGLE_CALENDAR_HEIGHT)), 1)
+    black_layer = Image.new('1', (GOOGLE_CALENDAR_WIDTH, int(GOOGLE_CALENDAR_HEIGHT)), 1)
+
+    red_layer_draw = ImageDraw.Draw(red_layer)
+    black_layer_draw = ImageDraw.Draw(black_layer)
+
+    font = ImageFont.truetype('fonts/timr45w.ttf', 17)
+    h_offset = -5
+
+    for event in results:
+        text = '[{}][{}]'.format(event[2], event[0])
+
+        w, h = font.getsize(text)
+        x = 0
+        y = h / 2 + h_offset
+
+        red_layer_draw.text((x, y), text, font=font, fill=0)
+
+        black_layer_draw.text((165, y), event[1], font=font, fill=0)
+
+        h_offset += h + 12
+
+        black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
+
+        h_offset += -5
+
+        if h_offset + h >= GOOGLE_CALENDAR_HEIGHT:
+            break
+
+    return red_layer, black_layer
+
+
 def debug():
     debug_image = Image.new('RGB', (EPD_WIDTH, EPD_HEIGHT), (255, 255, 255))
     pixels = debug_image.load()
@@ -183,6 +260,11 @@ if __name__ == '__main__':
 
     red_image.paste(red_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
     black_image.paste(black_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
+
+    red_layer, black_layer = right_top_calendar()
+
+    red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
+    black_image.paste(black_layer, (CALENDAR_WIDTH + 1, 0))
 
     black_image.save('black.bmp')
     red_image.save('red.bmp')
