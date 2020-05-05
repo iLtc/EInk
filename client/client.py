@@ -1,5 +1,6 @@
 from .waveshare_epd import epd7in5bc_V2
 from PIL import Image
+import random
 
 
 def main():
@@ -8,7 +9,9 @@ def main():
 
     epd = epd7in5bc_V2.EPD()
     epd.init()
-    epd.Clear()
+
+    if random.random() <= 0.3:
+        epd.Clear()
 
     epd.display(epd.getbuffer(black_layer), epd.getbuffer(red_layer))
 

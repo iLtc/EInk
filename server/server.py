@@ -3,14 +3,11 @@ import calendar
 import datetime
 import time
 import requests
-import os
 import utils
 import config
 from google.oauth2 import service_account
 import googleapiclient.discovery
-import boto3
 
-from pprint import pprint
 
 EPD_WIDTH = 800
 EPD_HEIGHT = 480
@@ -316,38 +313,6 @@ def right_middle_task():
     return red_layer, black_layer
 
 
-def s3():
-    files = ['red.bmp', 'black.bmp']
-
-    session = boto3.Session(
-        aws_access_key_id=config.AWS_ACCESS_KEY,
-        aws_secret_access_key=config.AWS_SECRET_KEY
-    )
-
-    s3 = session.resource('s3')
-
-    s3_client = boto3.client(
-        's3',
-        aws_access_key_id=config.AWS_ACCESS_KEY,
-        aws_secret_access_key=config.AWS_SECRET_KEY
-    )
-
-    bucket = s3.Bucket(config.AWS_S3_BUCKETNAME)
-    time_str = NOW.strftime('%Y%m%d%H%M%S')
-
-    for object in bucket.objects.filter(Prefix='main/'):
-        key = object.key
-        filename = key.split('/')[-1]
-        new_filename = time_str + '/' + filename
-
-        s3.Object(config.AWS_S3_BUCKETNAME, new_filename).copy_from(CopySource=config.AWS_S3_BUCKETNAME + '/' + key)
-
-        s3.Object(config.AWS_S3_BUCKETNAME, key).delete()
-
-    for file in files:
-        s3_client.upload_file(file, config.AWS_S3_BUCKETNAME, 'main/' + file)
-
-
 def debug():
     debug_image = Image.new('RGB', (EPD_WIDTH, EPD_HEIGHT), (255, 255, 255))
     pixels = debug_image.load()
@@ -384,7 +349,7 @@ def main():
     black_image.save('../black.bmp')
     red_image.save('../red.bmp')
 
-    # s3()
+    # debug()
 
 
 if __name__ == '__main__':
