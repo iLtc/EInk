@@ -207,7 +207,8 @@ def right_top_calendar():
         results.append([
             event['cal'],
             event['summary'],
-            '{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute)
+            '{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute),
+            True if NOW >= start else False
         ])
 
     red_layer = Image.new('1', (GOOGLE_CALENDAR_WIDTH, int(GOOGLE_CALENDAR_HEIGHT)), 1)
@@ -228,7 +229,10 @@ def right_top_calendar():
 
         red_layer_draw.text((x, y), text, font=font, fill=0)
 
-        black_layer_draw.text((165, y), event[1], font=font, fill=0)
+        if event[3]:
+            red_layer_draw.text((165, y), '>>> {} <<<'.format(event[1]), font=font, fill=0)
+        else:
+            black_layer_draw.text((165, y), event[1], font=font, fill=0)
 
         h_offset += h + 12
 
