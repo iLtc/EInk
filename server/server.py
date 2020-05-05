@@ -239,8 +239,8 @@ def right_top_calendar():
         if h_offset + h >= GOOGLE_CALENDAR_HEIGHT:
             break
 
-    if h_offset + 20 < GOOGLE_CALENDAR_HEIGHT:
-        GOOGLE_CALENDAR_HEIGHT = h_offset + 20
+    if h_offset + 10 < GOOGLE_CALENDAR_HEIGHT:
+        GOOGLE_CALENDAR_HEIGHT = h_offset + 10
         TASK_HEIGHT = EPD_HEIGHT - WEATHER_HEIGHT - GOOGLE_CALENDAR_HEIGHT
 
     return red_layer, black_layer
