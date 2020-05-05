@@ -331,7 +331,7 @@ def debug():
             elif black_image.getpixel((i, j)) == 0:
                 pixels[i, j] = (0, 0, 0)
 
-    debug_image.save('debug.bmp')
+    debug_image.save('../debug.bmp')
     debug_image.show()
 
 
@@ -356,7 +356,7 @@ def main():
     black_image.save('../black.bmp')
     red_image.save('../red.bmp')
 
-    debug()
+    # debug()
 
 
 if __name__ == '__main__':
