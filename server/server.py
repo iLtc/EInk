@@ -171,6 +171,9 @@ def weather_card(icon, title, temp, subtitle):
 
 
 def right_top_calendar():
+    global GOOGLE_CALENDAR_HEIGHT
+    global TASK_HEIGHT
+
     SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
 
     credentials = service_account.Credentials.from_service_account_file(config.SERVICE_ACCOUNT_FILE, scopes=SCOPES)
@@ -235,6 +238,10 @@ def right_top_calendar():
 
         if h_offset + h >= GOOGLE_CALENDAR_HEIGHT:
             break
+
+    if h_offset + 20 < GOOGLE_CALENDAR_HEIGHT:
+        GOOGLE_CALENDAR_HEIGHT = h_offset + 20
+        TASK_HEIGHT = EPD_HEIGHT - WEATHER_HEIGHT - GOOGLE_CALENDAR_HEIGHT
 
     return red_layer, black_layer
 
@@ -349,7 +356,7 @@ def main():
     black_image.save('../black.bmp')
     red_image.save('../red.bmp')
 
-    # debug()
+    debug()
 
 
 if __name__ == '__main__':
