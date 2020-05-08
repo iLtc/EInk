@@ -7,6 +7,8 @@ import utils
 import config
 from google.oauth2 import service_account
 import googleapiclient.discovery
+from .waveshare_epd import epd7in5bc_V2
+import random
 
 
 EPD_WIDTH = 800
@@ -339,7 +341,7 @@ def debug():
     debug_image.show()
 
 
-def main():
+def server():
     left_calendar()
 
     red_layer, black_layer = right_bottom_weather()
@@ -357,12 +359,28 @@ def main():
     red_image.paste(red_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
     black_image.paste(black_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
 
-    black_image.save('../black.bmp')
-    red_image.save('../red.bmp')
+    black_image.save('black.bmp')
+    red_image.save('red.bmp')
 
     # debug()
 
 
+def client():
+    black_layer = Image.open('black.bmp')
+    red_layer = Image.open('red.bmp')
+
+    epd = epd7in5bc_V2.EPD()
+    epd.init()
+
+    if random.random() <= 0.3:
+        epd.Clear()
+
+    epd.display(epd.getbuffer(black_layer), epd.getbuffer(red_layer))
+
+    epd.sleep()
+
+
 if __name__ == '__main__':
-    main()
+    server()
+    client()
 
