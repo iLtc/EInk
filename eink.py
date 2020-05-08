@@ -316,7 +316,7 @@ def right_middle_task():
         else:
             black_layer_draw.text((x, y), date, font=font, fill=0)
 
-        black_layer_draw.text((55, y), text, font=font, fill=0)
+        black_layer_draw.text((70, y), text, font=font, fill=0)
 
         w, h = font.getsize(project)
         x = TASK_WIDTH - w
