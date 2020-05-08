@@ -100,7 +100,7 @@ def right_bottom_weather():
     red_card_layer, black_card_layer = weather_card(
         weather_current['weather'][0]['icon'],
         weather_current['weather'][0]['description'],
-        '{} °F / {} °F'.format(weather_current['temp'], weather_current['feels_like']),
+        '{} °F / {} °F'.format(weather_current['feels_like'], weather_current['temp']),
         'Now'
     )
 
@@ -144,15 +144,26 @@ def weather_card(icon, title, temp, subtitle):
     red_layer.paste(red_icon_layer, (0, int(WEATHER_HEIGHT / 2 - red_icon_layer.size[1] / 2)))
     black_layer.paste(black_icon_layer, (0, int(WEATHER_HEIGHT / 2 - black_icon_layer.size[1] / 2)))
 
-    black_layer_draw.line((red_icon_layer.size[0], WEATHER_HEIGHT / 2, WEATHER_WIDTH, WEATHER_HEIGHT / 2), 0, 1)
+    black_layer_draw.line((red_icon_layer.size[0], WEATHER_HEIGHT / 2, int(WEATHER_WIDTH / 2), WEATHER_HEIGHT / 2), 0, 1)
 
     title = title.title()
 
-    font_title = ImageFont.truetype('fonts/Roboto-Light.ttf', 22)
+    title_size = 24
+
+    font_title = ImageFont.truetype('fonts/Roboto-Light.ttf', title_size)
+
+    w_title, h_title = font_title.getsize(title)
+
+    while w_title > int(WEATHER_WIDTH / 2) - red_icon_layer.size[0]:
+        title_size -= 1
+
+        font_title = ImageFont.truetype('fonts/Roboto-Light.ttf', title_size)
+
+        w_title, h_title = font_title.getsize(title)
+
     font_temp = ImageFont.truetype('fonts/Roboto-Light.ttf', 15)
     font_subtitle = ImageFont.truetype('fonts/Roboto-Light.ttf', 12)
 
-    w_title, h_title = font_title.getsize(title)
     x_title = ((WEATHER_WIDTH / 2) - red_icon_layer.size[0]) / 2 - (w_title / 2) + red_icon_layer.size[0]
     y_title = WEATHER_HEIGHT / 4 - h_title / 2
 
