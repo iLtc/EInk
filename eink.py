@@ -232,7 +232,26 @@ def right_top_calendar():
     font = ImageFont.truetype('fonts/timr45w.ttf', 17)
     h_offset = -5
 
+    if len(results) == 0:
+        text = 'No more events for the next 24 hours! Wow!'
+
+        w, h = font.getsize(text)
+        x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
+        y = h / 2 + h_offset
+
+        black_layer_draw.text((x, y), text, font=font, fill=0)
+
+        h_offset += h + 12
+
+        black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
+
+        h_offset += -5
+
+    count = 0
+
     for event in results:
+        count += 1
+
         text = '[{}][{}]'.format(event[2], event[0])
 
         w, h = font.getsize(text)
@@ -252,7 +271,22 @@ def right_top_calendar():
 
         h_offset += -5
 
-        if h_offset + h >= GOOGLE_CALENDAR_HEIGHT:
+        if h_offset + 3 * h >= GOOGLE_CALENDAR_HEIGHT:
+            if count < len(results):
+                text = 'And {} more event(s) ......'.format(len(results) - count)
+
+                w, h = font.getsize(text)
+                x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
+                y = h / 2 + h_offset
+
+                red_layer_draw.text((x, y), text, font=font, fill=0)
+
+                h_offset += h + 12
+
+                black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
+
+                h_offset += -5
+
             break
 
     if h_offset + 10 < GOOGLE_CALENDAR_HEIGHT:
@@ -278,8 +312,13 @@ def right_middle_task():
 
     tasks = []
 
+    three_days = (NOW + datetime.timedelta(days=3)).strftime('%Y-%m-%d')
+
     for task in data:
         if 'due' in task:
+            if task['due']['date'] > three_days:
+                continue
+
             project_title = projects[task['project_id']]['name']
 
             if 'parent' in projects[task['project_id']]:
@@ -302,7 +341,26 @@ def right_middle_task():
     font = ImageFont.truetype('fonts/timr45w.ttf', 17)
     h_offset = -5
 
+    if len(tasks) == 0:
+        text = 'No more tasks! Good job!'
+
+        w, h = font.getsize(text)
+        x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
+        y = h / 2 + h_offset
+
+        black_layer_draw.text((x, y), text, font=font, fill=0)
+
+        h_offset += h + 12
+
+        black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
+
+        h_offset += -5
+
+    count = 0
+
     for task in tasks:
+        count += 1
+
         date = task['due']['string']
         text = task['content']
         project = '[{}]'.format(task['project'])
@@ -330,7 +388,16 @@ def right_middle_task():
 
         h_offset += -5
 
-        if h_offset + h >= TASK_HEIGHT:
+        if h_offset + 2 * h >= TASK_HEIGHT:
+            if count < len(tasks):
+                text = 'And {} more tasks(s) ......'.format(len(tasks) - count)
+
+                w, h = font.getsize(text)
+                x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
+                y = h / 2 + h_offset
+
+                red_layer_draw.text((x, y), text, font=font, fill=0)
+
             break
 
     return red_layer, black_layer
