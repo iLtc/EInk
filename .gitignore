@@ -3,7 +3,7 @@ venv
 .idea
 .env
 __pycache__
-php/vendor
-php/config.php
-server/config.py
-server/*.json
+config.py
+*.json
+black.bmp
+red.bmp
