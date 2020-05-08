@@ -7,8 +7,7 @@ import utils
 import config
 from google.oauth2 import service_account
 import googleapiclient.discovery
-from .waveshare_epd import epd7in5bc_V2
-import random
+import sys
 
 
 EPD_WIDTH = 800
@@ -337,8 +336,8 @@ def debug():
             elif black_image.getpixel((i, j)) == 0:
                 pixels[i, j] = (0, 0, 0)
 
-    debug_image.save('../debug.bmp')
-    debug_image.show()
+    debug_image.save('debug.bmp')
+    # debug_image.show()
 
 
 def server():
@@ -365,14 +364,16 @@ def server():
     # debug()
 
 
-def client():
+def client(clear=False):
+    from waveshare_epd import epd7in5bc_V2
+
     black_layer = Image.open('black.bmp')
     red_layer = Image.open('red.bmp')
 
     epd = epd7in5bc_V2.EPD()
     epd.init()
 
-    if random.random() <= 0.3:
+    if clear:
         epd.Clear()
 
     epd.display(epd.getbuffer(black_layer), epd.getbuffer(red_layer))
@@ -381,6 +382,18 @@ def client():
 
 
 if __name__ == '__main__':
-    server()
-    client()
+    if len(sys.argv) == 1:
+        print('python3 eink.py [server [debug]] [client [clear]]')
 
+    if len(sys.argv) >= 2:
+        if 'server' in sys.argv:
+            server()
+
+            if 'debug' in sys.argv:
+                debug()
+
+        if 'client' in sys.argv:
+            if 'clear' in sys.argv:
+                client(clear=True)
+            else:
+                client(clear=False)
