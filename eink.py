@@ -229,8 +229,8 @@ def right_top_calendar():
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
 
-    font = ImageFont.truetype('fonts/timr45w.ttf', 17)
-    h_offset = -5
+    font = ImageFont.truetype('fonts/timr45w.ttf', 18)
+    h_offset = -8
 
     if len(results) == 0:
         text = 'No more events for the next 24 hours! Wow!'
@@ -245,7 +245,7 @@ def right_top_calendar():
 
         black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
 
-        h_offset += -5
+        h_offset += -7
 
     count = 0
 
@@ -269,11 +269,11 @@ def right_top_calendar():
 
         black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
 
-        h_offset += -5
+        h_offset += -7
 
-        if h_offset + 3 * h >= GOOGLE_CALENDAR_HEIGHT:
+        if h_offset + 2.5 * h >= GOOGLE_CALENDAR_HEIGHT and len(results) - count > 1:
             if count < len(results):
-                text = 'And {} more event(s) ......'.format(len(results) - count)
+                text = 'And {} more event(s) for the next 24 hours ......'.format(len(results) - count)
 
                 w, h = font.getsize(text)
                 x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
@@ -285,7 +285,7 @@ def right_top_calendar():
 
                 black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
 
-                h_offset += -5
+                h_offset += -7
 
             break
 
@@ -350,11 +350,11 @@ def right_middle_task():
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
 
-    font = ImageFont.truetype('fonts/timr45w.ttf', 17)
-    h_offset = -5
+    font = ImageFont.truetype('fonts/timr45w.ttf', 18)
+    h_offset = -10
 
     if len(tasks) == 0:
-        text = 'No more tasks! Good job!'
+        text = 'No more tasks for the next 3 days! Good job!'
 
         w, h = font.getsize(text)
         x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
@@ -366,7 +366,7 @@ def right_middle_task():
 
         black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
 
-        h_offset += -5
+        h_offset += -7
 
     count = 0
 
@@ -398,11 +398,11 @@ def right_middle_task():
 
         black_layer_draw.line((0, h_offset, GOOGLE_CALENDAR_WIDTH, h_offset), 0, 1)
 
-        h_offset += -5
+        h_offset += -7
 
-        if h_offset + 2 * h >= TASK_HEIGHT:
+        if h_offset + 2 * h >= TASK_HEIGHT and len(tasks) - count > 1:
             if count < len(tasks):
-                text = 'And {} more tasks(s) ......'.format(len(tasks) - count)
+                text = 'And {} more tasks(s) for the next 3 days ......'.format(len(tasks) - count)
 
                 w, h = font.getsize(text)
                 x = GOOGLE_CALENDAR_WIDTH / 2 - w / 2
