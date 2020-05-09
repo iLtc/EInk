@@ -51,9 +51,9 @@ def left_calendar():
         if i != NOW.day:
             month_today_str = month_today_str.replace(str(i).rjust(2), '  ')
 
-    font_week_day_name = ImageFont.truetype('fonts/Roboto-Light.ttf', 35)
+    font_week_day_name = ImageFont.truetype('fonts/Roboto-Regular.ttf', 35)
     font_day_number = ImageFont.truetype('fonts/Roboto-Black.ttf', 110)
-    font_month_year_str = ImageFont.truetype('fonts/Roboto-Light.ttf', 25)
+    font_month_year_str = ImageFont.truetype('fonts/Roboto-Regular.ttf', 30)
     font_month_str = ImageFont.truetype('fonts/FreeMonoBold.ttf', 22)
     font_status = ImageFont.truetype('fonts/Roboto-Light.ttf', 16)
 
@@ -150,7 +150,7 @@ def weather_card(icon, title, temp, subtitle):
 
     title_size = 24
 
-    font_title = ImageFont.truetype('fonts/Roboto-Light.ttf', title_size)
+    font_title = ImageFont.truetype('fonts/Roboto-Regular.ttf', title_size)
 
     w_title, h_title = font_title.getsize(title)
 
