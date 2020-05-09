@@ -310,6 +310,9 @@ def right_middle_task():
         'https://api.todoist.com/rest/v1/tasks',
         headers={'Authorization': config.TODOIST_TOKEN}).json()
 
+    for task in data:
+        projects[task['id']] = task
+
     tasks = []
 
     three_days = (NOW + datetime.timedelta(days=3)).strftime('%Y-%m-%d')
@@ -319,7 +322,16 @@ def right_middle_task():
             if task['due']['date'] > three_days:
                 continue
 
-            project_title = projects[task['project_id']]['name']
+            if 'parent' in task:
+                project_id = task['parent']
+
+                if 'name' in projects[project_id]:
+                    project_title = projects[project_id]['name']
+                else:
+                    project_title = projects[project_id]['content']
+            else:
+                project_id = task['project_id']
+                project_title = projects[project_id]['name']
 
             if 'parent' in projects[task['project_id']]:
                 project_title = projects[projects[task['project_id']]['parent']]['name'] + ' > ' + project_title
