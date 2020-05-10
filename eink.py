@@ -302,9 +302,13 @@ def right_middle_task():
         headers={'Authorization': config.TODOIST_TOKEN}).json()
 
     projects = {}
+    inbox_id = 0
 
     for project in data:
         projects[project['id']] = project
+
+        if project['name'] == 'Inbox':
+            inbox_id = project['id']
 
     data = requests.get(
         'https://api.todoist.com/rest/v1/tasks',
@@ -312,6 +316,13 @@ def right_middle_task():
 
     for task in data:
         projects[task['id']] = task
+
+    inbox_tasks = []
+
+    for task in data:
+        if task['project_id'] == inbox_id:
+            task['inbox'] = True
+            inbox_tasks.append(task)
 
     tasks = []
 
@@ -341,6 +352,8 @@ def right_middle_task():
             tasks.append(task)
 
     tasks.sort(key=lambda e: e['due']['date'])
+
+    tasks = inbox_tasks + tasks
 
     today = NOW.strftime('%Y-%m-%d')
 
@@ -373,26 +386,36 @@ def right_middle_task():
     for task in tasks:
         count += 1
 
-        date = task['due']['string']
-        text = task['content']
-        project = '[{}]'.format(task['project'])
+        if 'inbox' in task:
+            text = task['content']
 
-        w, h = font.getsize(date)
-        x = 0
-        y = h / 2 + h_offset
+            w, h = font.getsize(text)
+            x = 0
+            y = h / 2 + h_offset
 
-        if task['due']['date'] < today:
-            red_layer_draw.text((x, y), date, font=font, fill=0)
+            red_layer_draw.text((x, y), '[Inbox]', font=font, fill=0)
+            black_layer_draw.text((70, y), text, font=font, fill=0)
         else:
-            black_layer_draw.text((x, y), date, font=font, fill=0)
+            date = task['due']['string']
+            text = task['content']
+            project = '[{}]'.format(task['project'])
 
-        black_layer_draw.text((70, y), text, font=font, fill=0)
+            w, h = font.getsize(date)
+            x = 0
+            y = h / 2 + h_offset
 
-        w, h = font.getsize(project)
-        x = TASK_WIDTH - w
-        y = h / 2 + h_offset
+            if task['due']['date'] < today:
+                red_layer_draw.text((x, y), date, font=font, fill=0)
+            else:
+                black_layer_draw.text((x, y), date, font=font, fill=0)
 
-        black_layer_draw.text((x, y), project, font=font, fill=0)
+            black_layer_draw.text((70, y), text, font=font, fill=0)
+
+            w, h = font.getsize(project)
+            x = TASK_WIDTH - w
+            y = h / 2 + h_offset
+
+            black_layer_draw.text((x, y), project, font=font, fill=0)
 
         h_offset += h + 12
 
