@@ -30,7 +30,7 @@ TASK_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
 NOW = datetime.datetime.now(datetime.timezone.utc).astimezone()
 
 
-def left_calendar(even_day):
+def today_calendar(even_day):
     red_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
     black_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
 
@@ -90,7 +90,7 @@ def left_calendar(even_day):
     return red_layer, black_layer
 
 
-def right_bottom_weather(even_day):
+def weather(even_day):
     red_layer = Image.new('1', (WEATHER_WIDTH, WEATHER_HEIGHT), 1)
     black_layer = Image.new('1', (WEATHER_WIDTH, WEATHER_HEIGHT), 1)
 
@@ -204,7 +204,7 @@ def weather_card(icon, title, temp, subtitle):
     return red_layer, black_layer
 
 
-def right_top_calendar():
+def google_calendar():
     global GOOGLE_CALENDAR_HEIGHT
     global TASK_HEIGHT
 
@@ -318,7 +318,7 @@ def right_top_calendar():
     return red_layer, black_layer
 
 
-def right_middle_task():
+def todo_task():
     data = requests.get(
         'https://api.todoist.com/rest/v1/projects',
         headers={'Authorization': config.TODOIST_TOKEN}).json()
@@ -481,7 +481,7 @@ def server():
 
     even_day = (NOW.day % 2 == 0)
 
-    red_layer, black_layer = left_calendar(even_day)
+    red_layer, black_layer = today_calendar(even_day)
 
     if even_day:
         red_image.paste(red_layer, (0, 0))
@@ -490,7 +490,7 @@ def server():
         red_image.paste(red_layer, (EPD_WIDTH - CALENDAR_WIDTH, 0))
         black_image.paste(black_layer, (EPD_WIDTH - CALENDAR_WIDTH, 0))
 
-    red_layer, black_layer = right_bottom_weather(even_day)
+    red_layer, black_layer = weather(even_day)
 
     if even_day:
         red_image.paste(red_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
@@ -499,7 +499,7 @@ def server():
         red_image.paste(red_layer, (0, 0))
         black_image.paste(black_layer, (0, 0))
 
-    red_layer, black_layer = right_top_calendar()
+    red_layer, black_layer = google_calendar()
 
     if even_day:
         red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
@@ -508,7 +508,7 @@ def server():
         red_image.paste(red_layer, (0, WEATHER_HEIGHT + 1))
         black_image.paste(black_layer, (0, WEATHER_HEIGHT + 1))
 
-    red_layer, black_layer = right_middle_task()
+    red_layer, black_layer = todo_task()
 
     if even_day:
         red_image.paste(red_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
