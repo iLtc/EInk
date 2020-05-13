@@ -47,9 +47,9 @@ def left_calendar():
     month_str = calendar.month(NOW.year, NOW.month).replace(time.strftime("%B") + ' ' + time.strftime("%Y"), '')
 
     month_today_str = month_str
-    for i in range(31, 0, -1):
+    for i in range(1, 32):
         if i != NOW.day:
-            month_today_str = month_today_str.replace(str(i).rjust(2), '  ')
+            month_today_str = month_today_str.replace(str(i).rjust(2), '  ', 1)
 
     font_week_day_name = ImageFont.truetype('fonts/Roboto-Regular.ttf', 35)
     font_day_number = ImageFont.truetype('fonts/Roboto-Black.ttf', 110)
