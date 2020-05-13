@@ -13,7 +13,7 @@ import sys
 EPD_WIDTH = 800
 EPD_HEIGHT = 480
 
-CALENDAR_WIDTH = 300
+CALENDAR_WIDTH = 250
 
 WEATHER_HEIGHT = 100
 WEATHER_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
@@ -54,7 +54,7 @@ def left_calendar():
     font_week_day_name = ImageFont.truetype('fonts/Roboto-Regular.ttf', 35)
     font_day_number = ImageFont.truetype('fonts/Roboto-Black.ttf', 110)
     font_month_year_str = ImageFont.truetype('fonts/Roboto-Regular.ttf', 30)
-    font_month_str = ImageFont.truetype('fonts/FreeMonoBold.ttf', 22)
+    font_month_str = ImageFont.truetype('fonts/FreeMonoBold.ttf', 18)
     font_status = ImageFont.truetype('fonts/Roboto-Light.ttf', 16)
 
     w_week_day_name, h_week_day_name = font_week_day_name.getsize(week_day_name)
@@ -69,12 +69,12 @@ def left_calendar():
     w_month_str, h_month_str = font_month_str.getsize(month_str)
     x_month_str = (CALENDAR_WIDTH / 2) - (w_month_str / 2 / (month_str.count('\n') - 1))
 
-    black_layer_draw.text((x_week_day_name, 30), week_day_name, font=font_week_day_name, fill=255)
-    black_layer_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=255)
-    red_layer_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=0)
-    black_layer_draw.text((x_month_year_str, 185), month_year_str, font=font_month_year_str, fill=255)
-    black_layer_draw.text((x_month_str, 220), month_str, font=font_month_str, fill=255)
-    red_layer_draw.text((x_month_str, 220), month_today_str, font=font_month_str, fill=0)
+    black_layer_draw.text((x_week_day_name, 50), week_day_name, font=font_week_day_name, fill=255)
+    black_layer_draw.text((x_day_number, 90), day_number, font=font_day_number, fill=255)
+    red_layer_draw.text((x_day_number, 90), day_number, font=font_day_number, fill=0)
+    black_layer_draw.text((x_month_year_str, 220), month_year_str, font=font_month_year_str, fill=255)
+    black_layer_draw.text((x_month_str, 250), month_str, font=font_month_str, fill=255)
+    red_layer_draw.text((x_month_str, 250), month_today_str, font=font_month_str, fill=0)
 
     black_layer_draw.text((10, EPD_HEIGHT - 30), 'Updated: ' + time.strftime('%H:%M:%S'), font=font_status, fill=255)
 
