@@ -81,14 +81,17 @@ def left_calendar():
     return red_layer, black_layer
 
 
-def right_bottom_weather():
+def right_bottom_weather(even_day):
     red_layer = Image.new('1', (WEATHER_WIDTH, WEATHER_HEIGHT), 1)
     black_layer = Image.new('1', (WEATHER_WIDTH, WEATHER_HEIGHT), 1)
 
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
 
-    black_layer_draw.line((0, 1, WEATHER_WIDTH, 1), 0, 3)
+    if even_day:
+        black_layer_draw.line((0, 1, WEATHER_WIDTH, 1), 0, 3)
+    else:
+        black_layer_draw.line((0, WEATHER_HEIGHT - 1, WEATHER_WIDTH, WEATHER_HEIGHT - 1), 0, 3)
 
     weather_data = requests.get(
         'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&units=imperial&appid={}'.format(
@@ -106,8 +109,12 @@ def right_bottom_weather():
         'Now'
     )
 
-    red_layer.paste(red_card_layer, (0, 3))
-    black_layer.paste(black_card_layer, (0, 3))
+    if even_day:
+        red_layer.paste(red_card_layer, (0, 3))
+        black_layer.paste(black_card_layer, (0, 3))
+    else:
+        red_layer.paste(red_card_layer, (0, 0))
+        black_layer.paste(black_card_layer, (0, 0))
 
     if NOW.hour < 19:
         weather_today = weather_data['daily'][0]
@@ -129,8 +136,12 @@ def right_bottom_weather():
             'Tomorrow'
         )
 
-    red_layer.paste(red_card_layer, (int(WEATHER_WIDTH / 2), 3))
-    black_layer.paste(black_card_layer, (int(WEATHER_WIDTH / 2), 3))
+    if even_day:
+        red_layer.paste(red_card_layer, (int(WEATHER_WIDTH / 2), 3))
+        black_layer.paste(black_card_layer, (int(WEATHER_WIDTH / 2), 3))
+    else:
+        red_layer.paste(red_card_layer, (int(WEATHER_WIDTH / 2), 0))
+        black_layer.paste(black_card_layer, (int(WEATHER_WIDTH / 2), 0))
 
     return red_layer, black_layer
 
@@ -459,30 +470,46 @@ def server():
     red_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
     black_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
 
+    even_day = (NOW.day % 2 == 0)
+
     red_layer, black_layer = left_calendar()
 
-    red_image.paste(red_layer, (0, 0))
-    black_image.paste(black_layer, (0, 0))
+    if even_day:
+        red_image.paste(red_layer, (0, 0))
+        black_image.paste(black_layer, (0, 0))
+    else:
+        red_image.paste(red_layer, (EPD_WIDTH - CALENDAR_WIDTH, 0))
+        black_image.paste(black_layer, (EPD_WIDTH - CALENDAR_WIDTH, 0))
 
-    red_layer, black_layer = right_bottom_weather()
+    red_layer, black_layer = right_bottom_weather(even_day)
 
-    red_image.paste(red_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
-    black_image.paste(black_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
+    if even_day:
+        red_image.paste(red_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
+        black_image.paste(black_layer, (CALENDAR_WIDTH + 1, EPD_HEIGHT - WEATHER_HEIGHT))
+    else:
+        red_image.paste(red_layer, (0, 0))
+        black_image.paste(black_layer, (0, 0))
 
     red_layer, black_layer = right_top_calendar()
 
-    red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
-    black_image.paste(black_layer, (CALENDAR_WIDTH + 1, 0))
+    if even_day:
+        red_image.paste(red_layer, (CALENDAR_WIDTH + 1, 0))
+        black_image.paste(black_layer, (CALENDAR_WIDTH + 1, 0))
+    else:
+        red_image.paste(red_layer, (0, WEATHER_HEIGHT + 1))
+        black_image.paste(black_layer, (0, WEATHER_HEIGHT + 1))
 
     red_layer, black_layer = right_middle_task()
 
-    red_image.paste(red_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
-    black_image.paste(black_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
+    if even_day:
+        red_image.paste(red_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
+        black_image.paste(black_layer, (CALENDAR_WIDTH + 1, int(GOOGLE_CALENDAR_HEIGHT + 1)))
+    else:
+        red_image.paste(red_layer, (0, int(GOOGLE_CALENDAR_HEIGHT + WEATHER_HEIGHT + 1)))
+        black_image.paste(black_layer, (0, int(GOOGLE_CALENDAR_HEIGHT + WEATHER_HEIGHT + 1)))
 
     black_image.save('black.bmp')
     red_image.save('red.bmp')
-
-    # debug(red_image, black_image)
 
     return red_image, black_image
 
