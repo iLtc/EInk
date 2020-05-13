@@ -30,7 +30,7 @@ TASK_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
 NOW = datetime.datetime.now(datetime.timezone.utc).astimezone()
 
 
-def left_calendar():
+def left_calendar(even_day):
     red_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
     black_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
 
@@ -76,7 +76,16 @@ def left_calendar():
     black_layer_draw.text((x_month_str, 250), month_str, font=font_month_str, fill=255)
     red_layer_draw.text((x_month_str, 250), month_today_str, font=font_month_str, fill=0)
 
-    black_layer_draw.text((10, EPD_HEIGHT - 30), 'Updated: ' + time.strftime('%H:%M:%S'), font=font_status, fill=255)
+    if even_day:
+        black_layer_draw.text(
+            (10, EPD_HEIGHT - 30),
+            'Updated: ' + time.strftime('%H:%M:%S'),
+            font=font_status, fill=255)
+    else:
+        black_layer_draw.text(
+            (CALENDAR_WIDTH - 135, EPD_HEIGHT - 30),
+            'Updated: ' + time.strftime('%H:%M:%S'),
+            font=font_status, fill=255)
 
     return red_layer, black_layer
 
@@ -472,7 +481,7 @@ def server():
 
     even_day = (NOW.day % 2 == 0)
 
-    red_layer, black_layer = left_calendar()
+    red_layer, black_layer = left_calendar(even_day)
 
     if even_day:
         red_image.paste(red_layer, (0, 0))
