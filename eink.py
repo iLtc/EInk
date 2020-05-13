@@ -27,17 +27,17 @@ GOOGLE_CALENDAR_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
 TASK_WIDTH = EPD_WIDTH - CALENDAR_WIDTH
 TASK_HEIGHT = (EPD_HEIGHT - WEATHER_HEIGHT) / 2
 
-red_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
-black_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
-
-red_draw = ImageDraw.Draw(red_image)
-black_draw = ImageDraw.Draw(black_image)
-
 NOW = datetime.datetime.now(datetime.timezone.utc).astimezone()
 
 
 def left_calendar():
-    black_draw.rectangle((0, 0, CALENDAR_WIDTH, EPD_HEIGHT), fill=0)
+    red_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
+    black_layer = Image.new('1', (CALENDAR_WIDTH, EPD_HEIGHT), 1)
+
+    red_layer_draw = ImageDraw.Draw(red_layer)
+    black_layer_draw = ImageDraw.Draw(black_layer)
+
+    black_layer_draw.rectangle((0, 0, CALENDAR_WIDTH, EPD_HEIGHT), fill=0)
 
     week_day_name = time.strftime("%A")
     day_number = time.strftime("%d")
@@ -69,14 +69,16 @@ def left_calendar():
     w_month_str, h_month_str = font_month_str.getsize(month_str)
     x_month_str = (CALENDAR_WIDTH / 2) - (w_month_str / 2 / (month_str.count('\n') - 1))
 
-    black_draw.text((x_week_day_name, 30), week_day_name, font=font_week_day_name, fill=255)
-    black_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=255)
-    red_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=0)
-    black_draw.text((x_month_year_str, 185), month_year_str, font=font_month_year_str, fill=255)
-    black_draw.text((x_month_str, 220), month_str, font=font_month_str, fill=255)
-    red_draw.text((x_month_str, 220), month_today_str, font=font_month_str, fill=0)
+    black_layer_draw.text((x_week_day_name, 30), week_day_name, font=font_week_day_name, fill=255)
+    black_layer_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=255)
+    red_layer_draw.text((x_day_number, 55), day_number, font=font_day_number, fill=0)
+    black_layer_draw.text((x_month_year_str, 185), month_year_str, font=font_month_year_str, fill=255)
+    black_layer_draw.text((x_month_str, 220), month_str, font=font_month_str, fill=255)
+    red_layer_draw.text((x_month_str, 220), month_today_str, font=font_month_str, fill=0)
 
-    black_draw.text((10, EPD_HEIGHT - 30), 'Updated: ' + time.strftime('%H:%M:%S'), font=font_status, fill=255)
+    black_layer_draw.text((10, EPD_HEIGHT - 30), 'Updated: ' + time.strftime('%H:%M:%S'), font=font_status, fill=255)
+
+    return red_layer, black_layer
 
 
 def right_bottom_weather():
@@ -438,7 +440,7 @@ def right_middle_task():
     return red_layer, black_layer
 
 
-def debug():
+def debug(red_image, black_image):
     debug_image = Image.new('RGB', (EPD_WIDTH, EPD_HEIGHT), (255, 255, 255))
     pixels = debug_image.load()
 
@@ -454,7 +456,13 @@ def debug():
 
 
 def server():
-    left_calendar()
+    red_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
+    black_image = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
+
+    red_layer, black_layer = left_calendar()
+
+    red_image.paste(red_layer, (0, 0))
+    black_image.paste(black_layer, (0, 0))
 
     red_layer, black_layer = right_bottom_weather()
 
@@ -474,7 +482,9 @@ def server():
     black_image.save('black.bmp')
     red_image.save('red.bmp')
 
-    # debug()
+    # debug(red_image, black_image)
+
+    return red_image, black_image
 
 
 def client(clear=False):
@@ -500,10 +510,10 @@ if __name__ == '__main__':
 
     if len(sys.argv) >= 2:
         if 'server' in sys.argv:
-            server()
+            red_image, black_image = server()
 
             if 'debug' in sys.argv:
-                debug()
+                debug(red_image, black_image)
 
         if 'client' in sys.argv:
             if 'clear' in sys.argv:
