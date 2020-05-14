@@ -373,7 +373,7 @@ def todo_task():
 
             tasks.append(task)
 
-    tasks.sort(key=lambda e: e['due']['date'])
+    tasks.sort(key=lambda e: (e['due']['date'], -e['priority'], e['content']))
 
     tasks = inbox_tasks + tasks
 
@@ -792,8 +792,6 @@ def client(clear=False):
 if __name__ == '__main__':
     if len(sys.argv) == 1:
         print('python3 eink.py [server [debug]] [client [clear]]')
-
-        four_quadrants()
 
     if len(sys.argv) >= 2:
         if 'server' in sys.argv:
