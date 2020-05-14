@@ -46,7 +46,7 @@ def google_events(urgent_important, not_urgent_important, urgent_not_important, 
         end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
 
         item = {
-            'left': '[{}] [{}]'.format('{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute), event['cal']),
+            'left': '[{}][{}]'.format('{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute), event['cal']),
             'left_red': True,
             'main': event['summary'] if NOW < start else '>>> {} <<<'.format(event['summary']),
             'main_red': True if NOW >= start else False,
@@ -186,32 +186,35 @@ def quadrant_card(items, width, height):
     for item in items:
         count += 1
 
-        w, h = font.getsize(item['left'])
-        x = 0
+        lw, h = font.getsize(item['left'])
+        lx = 0
         y = h / 2 + h_offset
+
+        rw, _ = font.getsize(item['right'])
+        rx = width - rw
+
+        mw, _ = font.getsize(item['main'])
+
+        while width - lw - rw - 15 < mw:
+            item['main'] = item['main'][:-4] + '...'
+            mw, _ = font.getsize(item['main'])
+
+        mx = lw + 10
 
         if item['left_red']:
-            red_layer_draw.text((x, y), item['left'], font=font, fill=0)
+            red_layer_draw.text((lx, y), item['left'], font=font, fill=0)
         else:
-            black_layer_draw.text((x, y), item['left'], font=font, fill=0)
-
-        w1, _ = font.getsize(item['main'])
-        x = w + 10
-        y = h / 2 + h_offset
+            black_layer_draw.text((lx, y), item['left'], font=font, fill=0)
 
         if item['main_red']:
-            red_layer_draw.text((x, y), item['main'], font=font, fill=0)
+            red_layer_draw.text((mx, y), item['main'], font=font, fill=0)
         else:
-            black_layer_draw.text((x, y), item['main'], font=font, fill=0)
-
-        w, _ = font.getsize(item['right'])
-        x = width - w
-        y = h / 2 + h_offset
+            black_layer_draw.text((mx, y), item['main'], font=font, fill=0)
 
         if item['right_red']:
-            red_layer_draw.text((x, y), item['right'], font=font, fill=0)
+            red_layer_draw.text((rx, y), item['right'], font=font, fill=0)
         else:
-            black_layer_draw.text((x, y), item['right'], font=font, fill=0)
+            black_layer_draw.text((rx, y), item['right'], font=font, fill=0)
 
         h_offset += 31
 
