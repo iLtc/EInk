@@ -124,7 +124,7 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
 
             tasks.append(task)
 
-    tasks.sort(key=lambda e: e['due']['date'])
+    tasks.sort(key=lambda e: (e['due']['date'], -e['priority'], e['content']))
 
     today = NOW.strftime('%Y-%m-%d')
 
