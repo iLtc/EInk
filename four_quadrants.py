@@ -13,6 +13,9 @@ EPD_HEIGHT = 480
 
 HEADER_HEIGHT = 30
 
+WEATHER_LAT = 40.7305044
+WEATHER_LON = -74.0343007
+
 NOW = datetime.datetime.now(datetime.timezone.utc).astimezone()
 
 
@@ -153,6 +156,51 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
                 not_urgent_not_important.append(item)
 
 
+def weather(not_urgent_not_important):
+    weather_data = requests.get(
+        'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&units=imperial&appid={}'.format(
+            WEATHER_LAT,
+            WEATHER_LON,
+            config.OPENWEATHERMAP_APPID
+        )).json()
+
+    weather_current = weather_data['current']
+
+    not_urgent_not_important.append({
+        'left': '[Now]',
+        'left_red': True,
+        'main': weather_current['weather'][0]['description'].title(),
+        'main_red': False,
+        'main_x': 100,
+        'right': '{} °F / {} °F'.format(weather_current['feels_like'], weather_current['temp']),
+        'right_red': False
+    })
+
+    weather_today = weather_data['daily'][0]
+
+    not_urgent_not_important.append({
+        'left': '[Today]',
+        'left_red': True,
+        'main': weather_today['weather'][0]['description'].title(),
+        'main_red': False,
+        'main_x': 100,
+        'right': '{} °F / {} °F'.format(weather_today['temp']['min'], weather_today['temp']['max']),
+        'right_red': False
+    })
+
+    weather_tomorrow = weather_data['daily'][1]
+
+    not_urgent_not_important.append({
+        'left': '[Tomorrow]',
+        'left_red': False,
+        'main': weather_tomorrow['weather'][0]['description'].title(),
+        'main_red': False,
+        'main_x': 100,
+        'right': '{} °F / {} °F'.format(weather_tomorrow['temp']['min'], weather_tomorrow['temp']['max']),
+        'right_red': False
+    })
+
+
 def quadrant_card(items, width, height):
     width = int(width)
     height = int(height)
@@ -199,7 +247,10 @@ def quadrant_card(items, width, height):
             item['main'] = item['main'][:-4] + '...'
             mw, _ = font.getsize(item['main'])
 
-        mx = lw + 10
+        if 'main_x' not in item:
+            mx = lw + 10
+        else:
+            mx = item['main_x']
 
         if item['left_red']:
             red_layer_draw.text((lx, y), item['left'], font=font, fill=0)
@@ -244,6 +295,7 @@ def four_quadrants():
 
     google_events(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
     todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
+    weather(not_urgent_not_important)
 
     red_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
     black_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
