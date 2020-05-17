@@ -97,7 +97,7 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
 
     for task in data:
         if task['project_id'] == inbox_id:
-            task['inbox'] = True
+            task['project'] = 'Inbox'
             inbox_tasks.append(task)
 
     tasks = []
@@ -129,12 +129,14 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
 
     tasks.sort(key=lambda e: (e['due']['date'], -e['priority'], e['content']))
 
+    tasks += inbox_tasks
+
     today = NOW.strftime('%Y-%m-%d')
 
     for task in tasks:
         item = {
-            'left': '[Inbox]' if 'inbox' in task else task['due']['string'],
-            'left_red': True if task['due']['date'] < today else False,
+            'left': task['due']['string'] if 'due' in task else 'No Due',
+            'left_red': True if 'due' in task and task['due']['date'] < today else False,
             'main': task['content'],
             'main_red': False,
             'right': '[{}]'.format(task['project']),
@@ -142,14 +144,14 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
         }
 
         if task['priority'] > 1:  # Important
-            if task['due']['date'] <= today:  # Urgent
+            if 'due' in task and task['due']['date'] <= today:  # Urgent
                 urgent_important.append(item)
 
             else:
                 not_urgent_important.append(item)
 
         else:
-            if task['due']['date'] <= today:  # Urgent
+            if 'due' in task and task['due']['date'] <= today:  # Urgent
                 urgent_not_important.append(item)
 
             else:
@@ -172,7 +174,7 @@ def weather(not_urgent_not_important):
         'main': weather_current['weather'][0]['description'].title(),
         'main_red': False,
         'main_x': 100,
-        'right': '{} °F / {} °F'.format(weather_current['feels_like'], weather_current['temp']),
+        'right': '{} °F / {} °F'.format(round(weather_current['feels_like']), round(weather_current['temp'])),
         'right_red': False
     })
 
@@ -184,7 +186,7 @@ def weather(not_urgent_not_important):
         'main': weather_today['weather'][0]['description'].title(),
         'main_red': False,
         'main_x': 100,
-        'right': '{} °F / {} °F'.format(weather_today['temp']['min'], weather_today['temp']['max']),
+        'right': '{} °F / {} °F'.format(round(weather_today['temp']['min']), round(weather_today['temp']['max'])),
         'right_red': False
     })
 
@@ -196,7 +198,7 @@ def weather(not_urgent_not_important):
         'main': weather_tomorrow['weather'][0]['description'].title(),
         'main_red': False,
         'main_x': 100,
-        'right': '{} °F / {} °F'.format(weather_tomorrow['temp']['min'], weather_tomorrow['temp']['max']),
+        'right': '{} °F / {} °F'.format(round(weather_tomorrow['temp']['min']), round(weather_tomorrow['temp']['max'])),
         'right_red': False
     })
 
