@@ -214,7 +214,7 @@ def quadrant_card(items, width, height):
     black_layer_draw = ImageDraw.Draw(black_layer)
 
     font = ImageFont.truetype('fonts/timr45w.ttf', 18)
-    h_offset = -10
+    h_offset = -9
 
     if len(items) == 0:
         text = 'All down! Good job!'
@@ -229,7 +229,7 @@ def quadrant_card(items, width, height):
 
         black_layer_draw.line((0, h_offset, width, h_offset), 0, 1)
 
-        h_offset += -7
+        h_offset += -6
 
     count = 0
 
@@ -273,7 +273,7 @@ def quadrant_card(items, width, height):
 
         black_layer_draw.line((0, h_offset, width, h_offset), 0, 1)
 
-        h_offset += -7
+        h_offset += -6
 
         if h_offset + 2 * h >= height and len(item) - count > 1:
             text = 'And {} more tasks or events for the next 3 days ......'.format(len(item) - count)
@@ -289,7 +289,7 @@ def quadrant_card(items, width, height):
     return red_layer, black_layer
 
 
-def four_quadrants():
+def four_quadrants(even_day):
     urgent_important = []
     urgent_not_important = []
     not_urgent_important = []
@@ -308,20 +308,20 @@ def four_quadrants():
     font_title = ImageFont.truetype('fonts/Roboto-Regular.ttf', 20)
 
     titles = [{'text': 'Urgent',
-               'x': (EPD_WIDTH - HEADER_HEIGHT) / 4 + HEADER_HEIGHT,
-               'y': HEADER_HEIGHT / 2,
+               'x': ((EPD_WIDTH - HEADER_HEIGHT) / 4 + HEADER_HEIGHT) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 4),
+               'y': (HEADER_HEIGHT / 2) if even_day else (EPD_HEIGHT - (HEADER_HEIGHT / 2)),
                'rotate': False},
               {'text': 'Not Urgent',
-               'x': (EPD_WIDTH - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT,
-               'y': HEADER_HEIGHT / 2,
+               'x': ((EPD_WIDTH - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 4 * 3),
+               'y': (HEADER_HEIGHT / 2) if even_day else (EPD_HEIGHT - (HEADER_HEIGHT / 2)),
                'rotate': False},
               {'text': 'Important',
-               'x': HEADER_HEIGHT / 2,
-               'y': (EPD_HEIGHT - HEADER_HEIGHT) / 4 + HEADER_HEIGHT,
+               'x': (HEADER_HEIGHT / 2) if even_day else (EPD_WIDTH - HEADER_HEIGHT / 2),
+               'y': ((EPD_HEIGHT - HEADER_HEIGHT) / 4 + HEADER_HEIGHT) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 4),
                'rotate': True},
               {'text': 'Not Important',
-               'x': HEADER_HEIGHT / 2,
-               'y': (EPD_HEIGHT - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT,
+               'x': (HEADER_HEIGHT / 2) if even_day else (EPD_WIDTH - HEADER_HEIGHT / 2),
+               'y': ((EPD_HEIGHT - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 4 * 3),
                'rotate': True}]
 
     for title in titles:
@@ -338,7 +338,7 @@ def four_quadrants():
 
             temp_draw.text((0, w / 2 - h / 2), title['text'], font=font_title)
 
-            temp_img = temp_img.rotate(90)
+            temp_img = temp_img.rotate(90) if even_day else temp_img.rotate(-90)
 
             x = int(title['x'] - w / 2)
             y = int(title['y'] - w / 2)
@@ -346,17 +346,17 @@ def four_quadrants():
             black_layer.paste(temp_img, (x, y))
 
     cards = [{'data': urgent_important,
-              'x': HEADER_HEIGHT + 2,
-              'y': HEADER_HEIGHT + 2},
+              'x': (HEADER_HEIGHT + 2) if even_day else 0,
+              'y': (HEADER_HEIGHT + 2) if even_day else 0},
              {'data': not_urgent_important,
-              'x': HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2,
-              'y': HEADER_HEIGHT + 2},
+              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
+              'y': (HEADER_HEIGHT + 2) if even_day else 0},
              {'data': urgent_not_important,
-              'x': HEADER_HEIGHT + 2,
-              'y': HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2},
+              'x': (HEADER_HEIGHT + 2) if even_day else 0,
+              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2)},
              {'data': not_urgent_not_important,
-              'x': HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2,
-              'y': HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2}]
+              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
+              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2)}]
 
     for card in cards:
         red_card_layer, black_card_layer = quadrant_card(
@@ -367,25 +367,41 @@ def four_quadrants():
         red_layer.paste(red_card_layer, (int(card['x']), int(card['y'])))
         black_layer.paste(black_card_layer, (int(card['x']), int(card['y'])))
 
-    black_layer_draw.line((0, HEADER_HEIGHT, EPD_WIDTH, HEADER_HEIGHT), 0, 2)
-    black_layer_draw.line((HEADER_HEIGHT, 0, HEADER_HEIGHT, EPD_HEIGHT), 0, 2)
-    black_layer_draw.line((0, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2, EPD_WIDTH, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2), 0, 2)
-    black_layer_draw.line((HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, 0, HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, EPD_HEIGHT), 0, 2)
+    if even_day:
+        black_layer_draw.line((0, HEADER_HEIGHT, EPD_WIDTH, HEADER_HEIGHT), 0, 2)
+        black_layer_draw.line((HEADER_HEIGHT, 0, HEADER_HEIGHT, EPD_HEIGHT), 0, 2)
+        black_layer_draw.line((0, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2, EPD_WIDTH, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2), 0, 2)
+        black_layer_draw.line((HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, 0, HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, EPD_HEIGHT), 0, 2)
+    else:
+        black_layer_draw.line((0, EPD_HEIGHT - HEADER_HEIGHT, EPD_WIDTH, EPD_HEIGHT - HEADER_HEIGHT), 0, 2)
+        black_layer_draw.line((EPD_WIDTH - HEADER_HEIGHT - 2, 0, EPD_WIDTH - HEADER_HEIGHT - 2, EPD_HEIGHT), 0, 2)
+        black_layer_draw.line((0, (EPD_HEIGHT - HEADER_HEIGHT) / 2, EPD_WIDTH, (EPD_HEIGHT - HEADER_HEIGHT) / 2), 0, 2)
+        black_layer_draw.line(((EPD_WIDTH - HEADER_HEIGHT) / 2 - 2, 0, (EPD_WIDTH - HEADER_HEIGHT) / 2 - 2, EPD_HEIGHT), 0, 2)
 
     return red_layer, black_layer
 
 
 def server():
-    red_layer, black_layer = four_quadrants()
+    even_day = (NOW.day % 2 == 0)
+
+    red_layer, black_layer = four_quadrants(even_day)
 
     black_layer_draw = ImageDraw.Draw(black_layer)
 
     font_status = ImageFont.truetype('fonts/Roboto-Light.ttf', 16)
-    black_layer_draw.text(
-        (EPD_WIDTH - 220, EPD_HEIGHT - 20),
-        'Updated: ' + NOW.strftime('%m/%d/%Y %H:%M:%S'),
-        font=font_status
-    )
+
+    if even_day:
+        black_layer_draw.text(
+            (EPD_WIDTH - 220, EPD_HEIGHT - 20),
+            'Updated: ' + NOW.strftime('%m/%d/%Y %H:%M:%S'),
+            font=font_status
+        )
+    else:
+        black_layer_draw.text(
+            (EPD_WIDTH - 250, EPD_HEIGHT - 50),
+            'Updated: ' + NOW.strftime('%m/%d/%Y %H:%M:%S'),
+            font=font_status
+        )
 
     black_layer.save('black.bmp')
     red_layer.save('red.bmp')
