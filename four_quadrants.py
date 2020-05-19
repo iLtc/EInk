@@ -49,11 +49,11 @@ def google_events(urgent_important, not_urgent_important, urgent_not_important, 
         end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
 
         item = {
-            'left': '[{}][{}]'.format('{:02d}:{:02d}-{:02d}:{:02d}'.format(start.hour, start.minute, end.hour, end.minute), event['cal']),
-            'left_red': True,
+            'left': '[{:02d}:{:02d}-{:02d}:{:02d}]'.format(start.hour, start.minute, end.hour, end.minute),
+            'left_red': True if start <= (NOW + datetime.timedelta(hours=3)) else False,
             'main': event['summary'] if NOW < start else '>>> {} <<<'.format(event['summary']),
             'main_red': True if NOW >= start else False,
-            'right': '',
+            'right': '[{}]'.format(event['cal']),
             'right_red': False
         }
 
@@ -275,18 +275,19 @@ def quadrant_card(items, width, height):
 
         h_offset += -6
 
-        if h_offset + 2 * h >= height and len(item) - count > 1:
-            text = 'And {} more tasks or events for the next 3 days ......'.format(len(item) - count)
+        # if h_offset + 2 * h >= height and len(items) - count > 1:
+        #     text = 'And {} more ......'.format(len(items) - count)
+        #
+        #     w, h = font.getsize(text)
+        #     x = width / 2 - w / 2
+        #     y = h / 2 + h_offset
+        #
+        #     red_layer_draw.text((x, y), text, font=font, fill=0)
 
-            w, h = font.getsize(text)
-            x = width / 2 - w / 2
-            y = h / 2 + h_offset
-
-            red_layer_draw.text((x, y), text, font=font, fill=0)
-
+        if h_offset + h >= height:
             break
 
-    return red_layer, black_layer
+    return red_layer, black_layer, items[count:]
 
 
 def four_quadrants(even_day):
@@ -347,20 +348,29 @@ def four_quadrants(even_day):
 
     cards = [{'data': urgent_important,
               'x': (HEADER_HEIGHT + 2) if even_day else 0,
-              'y': (HEADER_HEIGHT + 2) if even_day else 0},
-             {'data': not_urgent_important,
-              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
-              'y': (HEADER_HEIGHT + 2) if even_day else 0},
+              'y': (HEADER_HEIGHT + 2) if even_day else 0,
+              'accept_left': False},
              {'data': urgent_not_important,
               'x': (HEADER_HEIGHT + 2) if even_day else 0,
-              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2)},
+              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2),
+              'accept_left': True},
+             {'data': not_urgent_important,
+              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
+              'y': (HEADER_HEIGHT + 2) if even_day else 0,
+              'accept_left': False},
              {'data': not_urgent_not_important,
               'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
-              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2)}]
+              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2),
+              'accept_left': True}]
+
+    tasks_left = []
 
     for card in cards:
-        red_card_layer, black_card_layer = quadrant_card(
-            card['data'],
+        if not card['accept_left']:
+            tasks_left = []
+
+        red_card_layer, black_card_layer, tasks_left = quadrant_card(
+            tasks_left + card['data'],
             (EPD_WIDTH - HEADER_HEIGHT) / 2 - 2,
             (EPD_HEIGHT - HEADER_HEIGHT) / 2 - 4)
 
