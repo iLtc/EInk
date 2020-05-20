@@ -216,7 +216,7 @@ def google_calendar():
 
     events = []
 
-    for name, cal in config.GOOGLE_CALENDARID.items():
+    for name, cal in config.GOOGLE_CALENDARID_WITH_SERVICE_ACCOUNT.items():
         data = calendar_service.events().list(
             calendarId=cal,
             orderBy='startTime',

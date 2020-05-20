@@ -5,7 +5,11 @@ import config
 from google.oauth2 import service_account
 import googleapiclient.discovery
 import sys
+import pickle
 from eink import debug, client
+import os
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
 
 
 EPD_WIDTH = 800
@@ -28,7 +32,52 @@ def google_events(urgent_important, not_urgent_important, urgent_not_important, 
 
     events = []
 
-    for name, cal in config.GOOGLE_CALENDARID.items():
+    for name, cal in config.GOOGLE_CALENDARID_WITH_SERVICE_ACCOUNT.items():
+        data = calendar_service.events().list(
+            calendarId=cal,
+            orderBy='startTime',
+            singleEvents=True,
+            timeMin=NOW.isoformat(),
+            timeMax=(NOW + datetime.timedelta(days=1)).isoformat()
+        ).execute()
+
+        for event in data['items']:
+            event['cal'] = name
+
+            events.append(event)
+
+    for name, cal in config.GOOGLE_CALENDARID_WITH_CREDENTIALS.items():
+        creds = None
+
+        pickle_name = name + '.pickle'
+
+        if os.path.exists(pickle_name):
+            with open(pickle_name, 'rb') as token:
+                creds = pickle.load(token)
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+
+                with open(pickle_name, 'wb') as token:
+                    pickle.dump(creds, token)
+
+            else:
+                item = {
+                    'left': 'Alert',
+                    'left_red': True,
+                    'main': '!!! {} needs to be authenticated !!!'.format(name),
+                    'main_red': True,
+                    'right': '',
+                    'right_red': False
+                }
+
+                urgent_important.append(item)
+
+                continue
+
+        calendar_service = googleapiclient.discovery.build('calendar', 'v3', credentials=creds)
+
         data = calendar_service.events().list(
             calendarId=cal,
             orderBy='startTime',
@@ -57,7 +106,7 @@ def google_events(urgent_important, not_urgent_important, urgent_not_important, 
             'right_red': False
         }
 
-        if event['cal'] in ['Study', 'Work', 'NYU']:  # Important
+        if event['cal'] in config.GOOGLE_IMPORTANT_CALENDARS:  # Important
             if start <= (NOW + datetime.timedelta(hours=8)):  # Urgent
                 urgent_important.append(item)
 
