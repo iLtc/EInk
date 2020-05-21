@@ -8,7 +8,6 @@ import sys
 import pickle
 from eink import debug, client
 import os
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 
 
@@ -136,6 +135,13 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
             inbox_id = project['id']
 
     data = requests.get(
+        'https://api.todoist.com/rest/v1/sections',
+        headers={'Authorization': config.TODOIST_TOKEN}).json()
+
+    for section in data:
+        projects[section['id']] = section
+
+    data = requests.get(
         'https://api.todoist.com/rest/v1/tasks',
         headers={'Authorization': config.TODOIST_TOKEN}).json()
 
@@ -158,6 +164,8 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
             if task['due']['date'] > three_days:
                 continue
 
+            task['parents'] = []
+
             if 'parent' in task:
                 project_id = task['parent']
 
@@ -165,14 +173,43 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
                     project_title = projects[project_id]['name']
                 else:
                     project_title = projects[project_id]['content']
+
+                task['parents'].append([project_id, project_title])
+
+            elif task['section_id'] != 0:
+                project_id = task['section_id']
+                project_title = projects[project_id]['name']
+
+                task['parents'].append([project_id, project_title])
+
             else:
                 project_id = task['project_id']
                 project_title = projects[project_id]['name']
 
-            if 'parent' in projects[task['project_id']]:
-                project_title = projects[projects[task['project_id']]['parent']]['name'] + ' > ' + project_title
+                task['parents'].append([project_id, project_title])
 
-            task['project'] = project_title
+            if 'parent' in projects[project_id]:
+                project_id = projects[project_id]['parent']
+                project_title = projects[project_id]['name']
+
+                task['parents'].append([project_id, project_title])
+
+            elif 'section_id' in projects[project_id] and projects[project_id]['section_id'] != 0:
+                project_id = projects[project_id]['section_id']
+                project_title = projects[project_id]['name']
+
+                task['parents'].append([project_id, project_title])
+
+            elif 'project_id' in projects[project_id]:
+                project_id = projects[project_id]['project_id']
+                project_title = projects[project_id]['name']
+
+                task['parents'].append([project_id, project_title])
+
+            if len(task['parents']) == 2:
+                task['project'] = '{} > {}'.format(task['parents'][1][1], task['parents'][0][1])
+            else:
+                task['project'] = task['parents'][0][1]
 
             tasks.append(task)
 
