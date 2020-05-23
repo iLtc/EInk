@@ -289,6 +289,25 @@ def weather(not_urgent_not_important):
     })
 
 
+def habitica(urgent_not_important):
+    data = requests.get(
+        'https://habitica.com/api/v3/tasks/user',
+        headers={'x-api-user': config.HABITICA_USERID, 'x-api-key': config.HABITICA_TOKEN}).json()['data']
+
+    for item in data:
+        if item['type'] != 'daily' or not item['isDue'] or item['completed']:
+            continue
+
+        urgent_not_important.append({
+            'left': NOW.strftime('%b %m'),
+            'left_red': False,
+            'main': item['text'],
+            'main_red': False,
+            'right': '[Habitica]',
+            'right_red': False
+        })
+
+
 def quadrant_card(items, width, height):
     width = int(width)
     height = int(height)
@@ -384,6 +403,7 @@ def four_quadrants(even_day):
 
     google_events(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
     todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
+    habitica(urgent_not_important)
     weather(not_urgent_not_important)
 
     red_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
