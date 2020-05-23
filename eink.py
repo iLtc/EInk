@@ -155,18 +155,18 @@ def weather(even_day):
     return red_layer, black_layer
 
 
-def weather_card(icon, title, temp, subtitle):
-    red_layer = Image.new('1', (int(WEATHER_WIDTH / 2), WEATHER_HEIGHT - 3), 1)
-    black_layer = Image.new('1', (int(WEATHER_WIDTH / 2), WEATHER_HEIGHT - 3), 1)
+def weather_card(icon, title, temp, subtitle, width=int(WEATHER_WIDTH / 2), height=int(WEATHER_HEIGHT - 3)):
+    red_layer = Image.new('1', (width, height), 1)
+    black_layer = Image.new('1', (width, height), 1)
 
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
 
     red_icon_layer, black_icon_layer = utils.open_weather_map_icon(icon)
-    red_layer.paste(red_icon_layer, (0, int(WEATHER_HEIGHT / 2 - red_icon_layer.size[1] / 2)))
-    black_layer.paste(black_icon_layer, (0, int(WEATHER_HEIGHT / 2 - black_icon_layer.size[1] / 2)))
+    red_layer.paste(red_icon_layer, (0, int(height / 2 - red_icon_layer.size[1] / 2)))
+    black_layer.paste(black_icon_layer, (0, int(height / 2 - black_icon_layer.size[1] / 2)))
 
-    black_layer_draw.line((red_icon_layer.size[0], WEATHER_HEIGHT / 2, int(WEATHER_WIDTH / 2), WEATHER_HEIGHT / 2), 0, 1)
+    black_layer_draw.line((red_icon_layer.size[0], height / 2, width, height / 2), 0, 1)
 
     title = title.title()
 
@@ -176,7 +176,7 @@ def weather_card(icon, title, temp, subtitle):
 
     w_title, h_title = font_title.getsize(title)
 
-    while w_title > int(WEATHER_WIDTH / 2) - red_icon_layer.size[0]:
+    while w_title > width - red_icon_layer.size[0]:
         title_size -= 1
 
         font_title = ImageFont.truetype('fonts/Roboto-Light.ttf', title_size)
@@ -186,16 +186,16 @@ def weather_card(icon, title, temp, subtitle):
     font_temp = ImageFont.truetype('fonts/Roboto-Light.ttf', 15)
     font_subtitle = ImageFont.truetype('fonts/Roboto-Light.ttf', 12)
 
-    x_title = ((WEATHER_WIDTH / 2) - red_icon_layer.size[0]) / 2 - (w_title / 2) + red_icon_layer.size[0]
-    y_title = WEATHER_HEIGHT / 4 - h_title / 2
+    x_title = (width - red_icon_layer.size[0]) / 2 - (w_title / 2) + red_icon_layer.size[0]
+    y_title = height / 4 - h_title / 2
 
     w_temp, h_temp = font_temp.getsize(temp)
-    x_temp = ((WEATHER_WIDTH / 2) - red_icon_layer.size[0]) / 2 - (w_temp / 2) + red_icon_layer.size[0]
-    y_temp = WEATHER_HEIGHT / 4 * 3 - h_temp / 2 - 10
+    x_temp = (width - red_icon_layer.size[0]) / 2 - (w_temp / 2) + red_icon_layer.size[0]
+    y_temp = height / 4 * 3 - h_temp / 2 - 10
 
     w_subtitle, h_subtitle = font_subtitle.getsize(subtitle)
-    x_subtitle = ((WEATHER_WIDTH / 2) - red_icon_layer.size[0]) / 2 - (w_subtitle / 2) + red_icon_layer.size[0]
-    y_subtitle = WEATHER_HEIGHT / 4 * 3 - h_subtitle / 2 + 10
+    x_subtitle = (width - red_icon_layer.size[0]) / 2 - (w_subtitle / 2) + red_icon_layer.size[0]
+    y_subtitle = height / 4 * 3 - h_subtitle / 2 + 10
 
     black_layer_draw.text((x_title, y_title), title, font=font_title, fill=0)
     black_layer_draw.text((x_temp, y_temp), temp, font=font_temp, fill=0)

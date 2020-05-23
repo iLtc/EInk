@@ -6,7 +6,7 @@ from google.oauth2 import service_account
 import googleapiclient.discovery
 import sys
 import pickle
-from eink import debug, client
+from eink import debug, client, weather_card
 import os
 from google.auth.transport.requests import Request
 
@@ -120,6 +120,94 @@ def google_events(urgent_important, not_urgent_important, urgent_not_important, 
                 not_urgent_not_important.append(item)
 
 
+def google_events_simple():
+    results = []
+
+    SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+
+    credentials = service_account.Credentials.from_service_account_file(config.SERVICE_ACCOUNT_FILE, scopes=SCOPES)
+
+    calendar_service = googleapiclient.discovery.build('calendar', 'v3', credentials=credentials)
+
+    events = []
+
+    for name, cal in config.GOOGLE_CALENDARID_WITH_SERVICE_ACCOUNT.items():
+        data = calendar_service.events().list(
+            calendarId=cal,
+            orderBy='startTime',
+            singleEvents=True,
+            timeMin=NOW.isoformat(),
+            timeMax=(NOW + datetime.timedelta(days=1)).isoformat()
+        ).execute()
+
+        for event in data['items']:
+            event['cal'] = name
+
+            events.append(event)
+
+    for name, cal in config.GOOGLE_CALENDARID_WITH_CREDENTIALS.items():
+        creds = None
+
+        pickle_name = name + '.pickle'
+
+        if os.path.exists(pickle_name):
+            with open(pickle_name, 'rb') as token:
+                creds = pickle.load(token)
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+
+                with open(pickle_name, 'wb') as token:
+                    pickle.dump(creds, token)
+
+            else:
+                item = {
+                    'left': '',
+                    'left_red': False,
+                    'main': '!!! {} needs to be authenticated !!!'.format(name),
+                    'main_red': True,
+                    'right': '',
+                    'right_red': False
+                }
+
+                results.append(item)
+
+                continue
+
+        calendar_service = googleapiclient.discovery.build('calendar', 'v3', credentials=creds)
+
+        data = calendar_service.events().list(
+            calendarId=cal,
+            orderBy='startTime',
+            singleEvents=True,
+            timeMin=NOW.isoformat(),
+            timeMax=(NOW + datetime.timedelta(days=1)).isoformat()
+        ).execute()
+
+        for event in data['items']:
+            event['cal'] = name
+
+            events.append(event)
+
+    events.sort(key=lambda e: e['start']['dateTime'])
+
+    for event in events:
+        start = datetime.datetime.strptime(event['start']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
+        end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
+
+        results.append({
+            'left': '{:02d}:{:02d}'.format(start.hour, start.minute),
+            'left_red': True if start <= (NOW + datetime.timedelta(hours=3)) else False,
+            'main': event['summary'] if NOW < start else '>>> {} <<<'.format(event['summary']),
+            'main_red': True if NOW >= start else False,
+            'right': '',
+            'right_red': False
+        })
+
+    return results
+
+
 def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important):
     data = requests.get(
         'https://api.todoist.com/rest/v1/projects',
@@ -166,45 +254,50 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
 
             task['parents'] = []
 
-            if 'parent' in task:
-                project_id = task['parent']
+            project_id = task['project_id']
+            project_title = projects[project_id]['name']
 
-                if 'name' in projects[project_id]:
-                    project_title = projects[project_id]['name']
-                else:
-                    project_title = projects[project_id]['content']
+            task['parents'].append([project_id, project_title])
 
-                task['parents'].append([project_id, project_title])
+            # if 'parent' in task:
+            #     project_id = task['parent']
+            #
+            #     if 'name' in projects[project_id]:
+            #         project_title = projects[project_id]['name']
+            #     else:
+            #         project_title = projects[project_id]['content']
+            #
+            #     task['parents'].append([project_id, project_title])
+            #
+            # elif task['section_id'] != 0:
+            #     project_id = task['section_id']
+            #     project_title = projects[project_id]['name']
+            #
+            #     task['parents'].append([project_id, project_title])
+            #
+            # else:
+            #     project_id = task['project_id']
+            #     project_title = projects[project_id]['name']
+            #
+            #     task['parents'].append([project_id, project_title])
 
-            elif task['section_id'] != 0:
-                project_id = task['section_id']
-                project_title = projects[project_id]['name']
-
-                task['parents'].append([project_id, project_title])
-
-            else:
-                project_id = task['project_id']
-                project_title = projects[project_id]['name']
-
-                task['parents'].append([project_id, project_title])
-
-            if 'parent' in projects[project_id]:
-                project_id = projects[project_id]['parent']
-                project_title = projects[project_id]['name']
-
-                task['parents'].append([project_id, project_title])
-
-            elif 'section_id' in projects[project_id] and projects[project_id]['section_id'] != 0:
-                project_id = projects[project_id]['section_id']
-                project_title = projects[project_id]['name']
-
-                task['parents'].append([project_id, project_title])
-
-            elif 'project_id' in projects[project_id]:
-                project_id = projects[project_id]['project_id']
-                project_title = projects[project_id]['name']
-
-                task['parents'].append([project_id, project_title])
+            # if 'parent' in projects[project_id]:
+            #     project_id = projects[project_id]['parent']
+            #     project_title = projects[project_id]['name']
+            #
+            #     task['parents'].append([project_id, project_title])
+            #
+            # elif 'section_id' in projects[project_id] and projects[project_id]['section_id'] != 0:
+            #     project_id = projects[project_id]['section_id']
+            #     project_title = projects[project_id]['name']
+            #
+            #     task['parents'].append([project_id, project_title])
+            #
+            # elif 'project_id' in projects[project_id]:
+            #     project_id = projects[project_id]['project_id']
+            #     project_title = projects[project_id]['name']
+            #
+            #     task['parents'].append([project_id, project_title])
 
             if len(task['parents']) == 2:
                 task['project'] = '{} > {}'.format(task['parents'][1][1], task['parents'][0][1])
@@ -253,6 +346,8 @@ def weather(not_urgent_not_important):
         )).json()
 
     weather_current = weather_data['current']
+    weather_today = weather_data['daily'][0]
+    weather_tomorrow = weather_data['daily'][1]
 
     not_urgent_not_important.append({
         'left': '[Now]',
@@ -264,8 +359,6 @@ def weather(not_urgent_not_important):
         'right_red': False
     })
 
-    weather_today = weather_data['daily'][0]
-
     not_urgent_not_important.append({
         'left': '[Today]',
         'left_red': True,
@@ -276,8 +369,6 @@ def weather(not_urgent_not_important):
         'right_red': False
     })
 
-    weather_tomorrow = weather_data['daily'][1]
-
     not_urgent_not_important.append({
         'left': '[Tomorrow]',
         'left_red': False,
@@ -287,6 +378,64 @@ def weather(not_urgent_not_important):
         'right': '{} °F / {} °F'.format(round(weather_tomorrow['temp']['min']), round(weather_tomorrow['temp']['max'])),
         'right_red': False
     })
+
+
+def weather_simple(width, height):
+    red_layer = Image.new('1', (width, height), 1)
+    black_layer = Image.new('1', (width, height), 1)
+
+    red_layer_draw = ImageDraw.Draw(red_layer)
+    black_layer_draw = ImageDraw.Draw(black_layer)
+
+    weather_data = requests.get(
+        'https://api.openweathermap.org/data/2.5/onecall?lat={}&lon={}&units=imperial&appid={}'.format(
+            WEATHER_LAT,
+            WEATHER_LON,
+            config.OPENWEATHERMAP_APPID
+        )).json()
+
+    weather_current = weather_data['current']
+
+    red_card_layer, black_card_layer = weather_card(
+        weather_current['weather'][0]['icon'],
+        weather_current['weather'][0]['description'],
+        '{} °F / {} °F'.format(weather_current['feels_like'], weather_current['temp']),
+        'Now',
+        width=width,
+        height=int(height / 2)
+    )
+
+    red_layer.paste(red_card_layer, (0, 0))
+    black_layer.paste(black_card_layer, (0, 0))
+
+    if NOW.hour < 19:
+        weather_today = weather_data['daily'][0]
+
+        red_card_layer, black_card_layer = weather_card(
+            weather_today['weather'][0]['icon'],
+            weather_today['weather'][0]['description'],
+            '{} °F / {} °F'.format(weather_today['temp']['min'], weather_today['temp']['max']),
+            'Today',
+            width=width,
+            height=int(height / 2)
+        )
+
+    else:
+        weather_tomorrow = weather_data['daily'][1]
+
+        red_card_layer, black_card_layer = weather_card(
+            weather_tomorrow['weather'][0]['icon'],
+            weather_tomorrow['weather'][0]['description'],
+            '{} °F / {} °F'.format(weather_tomorrow['temp']['min'], weather_tomorrow['temp']['max']),
+            'Tomorrow',
+            width=width,
+            height=int(height / 2)
+        )
+
+    red_layer.paste(red_card_layer, (0, int(height / 2)))
+    black_layer.paste(black_card_layer, (0, int(height / 2)))
+
+    return red_layer, black_layer
 
 
 def habitica(urgent_not_important):
@@ -395,19 +544,19 @@ def quadrant_card(items, width, height):
     return red_layer, black_layer, items[count:]
 
 
-def four_quadrants(even_day):
+def four_quadrants(even_day=True, width=EPD_WIDTH, height=EPD_HEIGHT, header_h=HEADER_HEIGHT):
     urgent_important = []
     urgent_not_important = []
     not_urgent_important = []
     not_urgent_not_important = []
 
-    google_events(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
+    # google_events(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
     todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
     habitica(urgent_not_important)
-    weather(not_urgent_not_important)
+    # weather(not_urgent_not_important)
 
-    red_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
-    black_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
+    red_layer = Image.new('1', (EPD_WIDTH, height), 1)
+    black_layer = Image.new('1', (EPD_WIDTH, height), 1)
 
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
@@ -415,20 +564,20 @@ def four_quadrants(even_day):
     font_title = ImageFont.truetype('fonts/Roboto-Regular.ttf', 20)
 
     titles = [{'text': 'Urgent',
-               'x': ((EPD_WIDTH - HEADER_HEIGHT) / 4 + HEADER_HEIGHT) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 4),
-               'y': (HEADER_HEIGHT / 2) if even_day else (EPD_HEIGHT - (HEADER_HEIGHT / 2)),
+               'x': ((width - header_h) / 4 + header_h) if even_day else ((width - header_h) / 4),
+               'y': (header_h / 2) if even_day else (height - (header_h / 2)),
                'rotate': False},
               {'text': 'Not Urgent',
-               'x': ((EPD_WIDTH - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 4 * 3),
-               'y': (HEADER_HEIGHT / 2) if even_day else (EPD_HEIGHT - (HEADER_HEIGHT / 2)),
+               'x': ((width - header_h) / 4 * 3 + header_h) if even_day else ((width - header_h) / 4 * 3),
+               'y': (header_h / 2) if even_day else (height - (header_h / 2)),
                'rotate': False},
               {'text': 'Important',
-               'x': (HEADER_HEIGHT / 2) if even_day else (EPD_WIDTH - HEADER_HEIGHT / 2),
-               'y': ((EPD_HEIGHT - HEADER_HEIGHT) / 4 + HEADER_HEIGHT) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 4),
+               'x': (header_h / 2) if even_day else (width - header_h / 2),
+               'y': ((height - header_h) / 4 + header_h) if even_day else ((height - header_h) / 4),
                'rotate': True},
               {'text': 'Not Important',
-               'x': (HEADER_HEIGHT / 2) if even_day else (EPD_WIDTH - HEADER_HEIGHT / 2),
-               'y': ((EPD_HEIGHT - HEADER_HEIGHT) / 4 * 3 + HEADER_HEIGHT) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 4 * 3),
+               'x': (header_h / 2) if even_day else (width - header_h / 2),
+               'y': ((height - header_h) / 4 * 3 + header_h) if even_day else ((height - header_h) / 4 * 3),
                'rotate': True}]
 
     for title in titles:
@@ -453,20 +602,20 @@ def four_quadrants(even_day):
             black_layer.paste(temp_img, (x, y))
 
     cards = [{'data': urgent_important,
-              'x': (HEADER_HEIGHT + 2) if even_day else 0,
-              'y': (HEADER_HEIGHT + 2) if even_day else 0,
+              'x': (header_h + 2) if even_day else 0,
+              'y': (header_h + 2) if even_day else 0,
               'accept_left': False},
              {'data': urgent_not_important,
-              'x': (HEADER_HEIGHT + 2) if even_day else 0,
-              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2),
+              'x': (header_h + 2) if even_day else 0,
+              'y': (header_h + (height - header_h) / 2 + 2) if even_day else ((height - header_h) / 2 + 2),
               'accept_left': True},
              {'data': not_urgent_important,
-              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
-              'y': (HEADER_HEIGHT + 2) if even_day else 0,
+              'x': (header_h + (width - header_h) / 2 + 2) if even_day else ((width - header_h) / 2),
+              'y': (header_h + 2) if even_day else 0,
               'accept_left': False},
              {'data': not_urgent_not_important,
-              'x': (HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_WIDTH - HEADER_HEIGHT) / 2),
-              'y': (HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2) if even_day else ((EPD_HEIGHT - HEADER_HEIGHT) / 2 + 2),
+              'x': (header_h + (width - header_h) / 2 + 2) if even_day else ((width - header_h) / 2),
+              'y': (header_h + (height - header_h) / 2 + 2) if even_day else ((height - header_h) / 2 + 2),
               'accept_left': True}]
 
     tasks_left = []
@@ -477,47 +626,110 @@ def four_quadrants(even_day):
 
         red_card_layer, black_card_layer, tasks_left = quadrant_card(
             tasks_left + card['data'],
-            (EPD_WIDTH - HEADER_HEIGHT) / 2 - 2,
-            (EPD_HEIGHT - HEADER_HEIGHT) / 2 - 4)
+            (width - header_h) / 2 - 2,
+            (height - header_h) / 2 - 4)
 
         red_layer.paste(red_card_layer, (int(card['x']), int(card['y'])))
         black_layer.paste(black_card_layer, (int(card['x']), int(card['y'])))
 
     if even_day:
-        black_layer_draw.line((0, HEADER_HEIGHT, EPD_WIDTH, HEADER_HEIGHT), 0, 2)
-        black_layer_draw.line((HEADER_HEIGHT, 0, HEADER_HEIGHT, EPD_HEIGHT), 0, 2)
-        black_layer_draw.line((0, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2, EPD_WIDTH, HEADER_HEIGHT + (EPD_HEIGHT - HEADER_HEIGHT) / 2), 0, 2)
-        black_layer_draw.line((HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, 0, HEADER_HEIGHT + (EPD_WIDTH - HEADER_HEIGHT) / 2, EPD_HEIGHT), 0, 2)
+        black_layer_draw.line((0, header_h, width, header_h), 0, 2)
+        black_layer_draw.line((header_h, 0, header_h, height), 0, 2)
+        black_layer_draw.line((0, header_h + (height - header_h) / 2, width, header_h + (height - header_h) / 2), 0, 2)
+        black_layer_draw.line((header_h + (width - header_h) / 2, 0, header_h + (width - header_h) / 2, height), 0, 2)
     else:
-        black_layer_draw.line((0, EPD_HEIGHT - HEADER_HEIGHT, EPD_WIDTH, EPD_HEIGHT - HEADER_HEIGHT), 0, 2)
-        black_layer_draw.line((EPD_WIDTH - HEADER_HEIGHT - 2, 0, EPD_WIDTH - HEADER_HEIGHT - 2, EPD_HEIGHT), 0, 2)
-        black_layer_draw.line((0, (EPD_HEIGHT - HEADER_HEIGHT) / 2, EPD_WIDTH, (EPD_HEIGHT - HEADER_HEIGHT) / 2), 0, 2)
-        black_layer_draw.line(((EPD_WIDTH - HEADER_HEIGHT) / 2 - 2, 0, (EPD_WIDTH - HEADER_HEIGHT) / 2 - 2, EPD_HEIGHT), 0, 2)
+        black_layer_draw.line((0, height - header_h, width, height - header_h), 0, 2)
+        black_layer_draw.line((width - header_h - 2, 0, width - header_h - 2, height), 0, 2)
+        black_layer_draw.line((0, (height - header_h) / 2, width, (height - header_h) / 2), 0, 2)
+        black_layer_draw.line(((width - header_h) / 2 - 2, 0, (width - header_h) / 2 - 2, height), 0, 2)
+
+    return red_layer, black_layer
+
+
+def today_calendar(width=200, height=EPD_HEIGHT):
+    red_layer = Image.new('1', (width, height), 1)
+    black_layer = Image.new('1', (width, height), 1)
+
+    red_layer_draw = ImageDraw.Draw(red_layer)
+    black_layer_draw = ImageDraw.Draw(black_layer)
+
+    black_layer_draw.rectangle((0, 0, width, height), fill=0)
+
+    week_day_name = NOW.strftime("%A")
+    day_number = NOW.strftime("%d")
+    month_year_str = NOW.strftime("%b") + ' ' + NOW.strftime("%Y")
+
+    font_week_day_name = ImageFont.truetype('fonts/Roboto-Regular.ttf', 30)
+    font_day_number = ImageFont.truetype('fonts/Roboto-Black.ttf', 90)
+    font_month_year_str = ImageFont.truetype('fonts/Roboto-Regular.ttf', 30)
+    font_status = ImageFont.truetype('fonts/Roboto-Light.ttf', 16)
+
+    w_week_day_name, h_week_day_name = font_week_day_name.getsize(week_day_name)
+    x_week_day_name = (width / 2) - (w_week_day_name / 2)
+
+    w_day_number, h_day_number = font_day_number.getsize(day_number)
+    x_day_number = (width / 2) - (w_day_number / 2)
+
+    w_month_year_str, h_month_year_str = font_month_year_str.getsize(month_year_str)
+    x_month_year_str = (width / 2) - (w_month_year_str / 2)
+
+    black_layer_draw.text((x_week_day_name, 5), week_day_name, font=font_week_day_name, fill=255)
+    black_layer_draw.text((x_day_number, 20), day_number, font=font_day_number, fill=255)
+    red_layer_draw.text((x_day_number, 20), day_number, font=font_day_number, fill=0)
+    black_layer_draw.text((x_month_year_str, 100), month_year_str, font=font_month_year_str, fill=255)
+
+    events = google_events_simple()
+
+    red_card, black_card, _ = quadrant_card(events, width, 145)
+
+    red_layer.paste(red_card, (0, 140))
+    black_layer.paste(black_card, (0, 140))
+
+    red_card, black_card = weather_simple(200, 170)
+
+    red_layer.paste(red_card, (0, 287))
+    black_layer.paste(black_card, (0, 287))
+
+    status_text = 'Updated: ' + NOW.strftime('%H:%M:%S')
+    w_status, h_status = font_status.getsize(status_text)
+
+    black_layer_draw.text(
+        (width / 2 - w_status / 2, height - 20),
+        status_text,
+        font=font_status, fill=255)
 
     return red_layer, black_layer
 
 
 def server():
+    red_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
+    black_layer = Image.new('1', (EPD_WIDTH, EPD_HEIGHT), 1)
+
+    black_draw = ImageDraw.Draw(black_layer)
+
     even_day = (NOW.day % 2 == 0)
 
-    red_layer, black_layer = four_quadrants(even_day)
+    red_card_layer, black_card_layer = four_quadrants(even_day, width=EPD_WIDTH - 202)
 
-    black_layer_draw = ImageDraw.Draw(black_layer)
-
-    font_status = ImageFont.truetype('fonts/Roboto-Light.ttf', 16)
+    red_calendar_card, black_calendar_card = today_calendar()
 
     if even_day:
-        black_layer_draw.text(
-            (EPD_WIDTH - 220, EPD_HEIGHT - 20),
-            'Updated: ' + NOW.strftime('%m/%d/%Y %H:%M:%S'),
-            font=font_status
-        )
+        red_layer.paste(red_card_layer, (0, 0))
+        black_layer.paste(black_card_layer, (0, 0))
+
+        red_layer.paste(red_calendar_card, (EPD_WIDTH - 200, 0))
+        black_layer.paste(black_calendar_card, (EPD_WIDTH - 200, 0))
+
+        black_draw.line((EPD_WIDTH - 202, 0, EPD_WIDTH - 202, EPD_HEIGHT), 0, 2)
+
     else:
-        black_layer_draw.text(
-            (EPD_WIDTH - 250, EPD_HEIGHT - 50),
-            'Updated: ' + NOW.strftime('%m/%d/%Y %H:%M:%S'),
-            font=font_status
-        )
+        red_layer.paste(red_calendar_card, (0, 0))
+        black_layer.paste(black_calendar_card, (0, 0))
+
+        red_layer.paste(red_card_layer, (202, 0))
+        black_layer.paste(black_card_layer, (202, 0))
+
+        black_draw.line((200, 0, 200, EPD_HEIGHT), 0, 2)
 
     black_layer.save('black.bmp')
     red_layer.save('red.bmp')
@@ -529,7 +741,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 1:
         print('python3 four_quadrants.py [server [debug]] [client [clear]]')
 
-    if len(sys.argv) >= 2:
+    else:
         if 'server' in sys.argv:
             red_image, black_image = server()
 
