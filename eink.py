@@ -183,18 +183,29 @@ def weather_card(icon, title, temp, subtitle, width=int(WEATHER_WIDTH / 2), heig
 
         w_title, h_title = font_title.getsize(title)
 
-    font_temp = ImageFont.truetype('fonts/Roboto-Light.ttf', 15)
-    font_subtitle = ImageFont.truetype('fonts/Roboto-Light.ttf', 12)
-
     x_title = (width - red_icon_layer.size[0]) / 2 - (w_title / 2) + red_icon_layer.size[0]
     y_title = height / 4 - h_title / 2
+
+    font_temp = ImageFont.truetype('fonts/Roboto-Light.ttf', 15)
 
     w_temp, h_temp = font_temp.getsize(temp)
     x_temp = (width - red_icon_layer.size[0]) / 2 - (w_temp / 2) + red_icon_layer.size[0]
     y_temp = height / 4 * 3 - h_temp / 2 - 10
 
+    subtitle_size = 12
+
+    font_subtitle = ImageFont.truetype('fonts/Roboto-Light.ttf', subtitle_size)
+
     w_subtitle, h_subtitle = font_subtitle.getsize(subtitle)
-    x_subtitle = (width - red_icon_layer.size[0]) / 2 - (w_subtitle / 2) + red_icon_layer.size[0]
+
+    while w_subtitle > width:
+        subtitle_size -= 1
+
+        font_subtitle = ImageFont.truetype('fonts/Roboto-Light.ttf', subtitle_size)
+
+        w_subtitle, h_subtitle = font_subtitle.getsize(subtitle)
+
+    x_subtitle = width / 2 - (w_subtitle / 2)
     y_subtitle = height / 4 * 3 - h_subtitle / 2 + 10
 
     black_layer_draw.text((x_title, y_title), title, font=font_title, fill=0)

@@ -197,12 +197,12 @@ def google_events_simple():
         end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
 
         results.append({
-            'left': '{:02d}:{:02d}'.format(start.hour, start.minute),
+            'left': '[{:02d}:{:02d}]'.format(start.hour, start.minute) if start > NOW else '',
             'left_red': True if start <= (NOW + datetime.timedelta(hours=3)) else False,
-            'main': event['summary'] if NOW < start else '>>> {} <<<'.format(event['summary']),
+            'main': event['summary'],
             'main_red': True if NOW >= start else False,
-            'right': '',
-            'right_red': False
+            'right': '[{:02d}:{:02d}]'.format(end.hour, end.minute) if start <= NOW else '',
+            'right_red': True
         })
 
     return results
@@ -398,9 +398,9 @@ def weather_simple(width, height):
 
     red_card_layer, black_card_layer = weather_card(
         weather_current['weather'][0]['icon'],
-        weather_current['weather'][0]['description'],
-        '{} °F / {} °F'.format(weather_current['feels_like'], weather_current['temp']),
-        'Now',
+        weather_current['weather'][0]['main'],
+        '{} °F / {} °F'.format(round(weather_current['feels_like']), round(weather_current['temp'])),
+        'Now: ' + weather_current['weather'][0]['description'].title(),
         width=width,
         height=int(height / 2)
     )
@@ -413,9 +413,9 @@ def weather_simple(width, height):
 
         red_card_layer, black_card_layer = weather_card(
             weather_today['weather'][0]['icon'],
-            weather_today['weather'][0]['description'],
-            '{} °F / {} °F'.format(weather_today['temp']['min'], weather_today['temp']['max']),
-            'Today',
+            weather_today['weather'][0]['main'],
+            '{} °F / {} °F'.format(round(weather_today['temp']['min']), round(weather_today['temp']['max'])),
+            'Today: ' + weather_today['weather'][0]['description'].title(),
             width=width,
             height=int(height / 2)
         )
@@ -425,9 +425,9 @@ def weather_simple(width, height):
 
         red_card_layer, black_card_layer = weather_card(
             weather_tomorrow['weather'][0]['icon'],
-            weather_tomorrow['weather'][0]['description'],
-            '{} °F / {} °F'.format(weather_tomorrow['temp']['min'], weather_tomorrow['temp']['max']),
-            'Tomorrow',
+            weather_tomorrow['weather'][0]['main'],
+            '{} °F / {} °F'.format(round(weather_tomorrow['temp']['min']), round(weather_tomorrow['temp']['max'])),
+            'Tomorrow: ' + weather_tomorrow['weather'][0]['description'].title(),
             width=width,
             height=int(height / 2)
         )
@@ -490,21 +490,24 @@ def quadrant_card(items, width, height):
     for item in items:
         count += 1
 
-        lw, h = font.getsize(item['left'])
-        lx = 0
+        mw, h = font.getsize(item['main'])
         y = h / 2 + h_offset
+
+        lw, _ = font.getsize(item['left'])
+        lx = 0
 
         rw, _ = font.getsize(item['right'])
         rx = width - rw
 
-        mw, _ = font.getsize(item['main'])
-
-        while width - lw - rw - 15 < mw:
+        while width - lw - rw - 10 < mw:
             item['main'] = item['main'][:-4] + '...'
             mw, _ = font.getsize(item['main'])
 
         if 'main_x' not in item:
-            mx = lw + 10
+            if lw > 0:
+                mx = lw + 5
+            else:
+                mx = 0
         else:
             mx = item['main_x']
 
@@ -685,7 +688,7 @@ def today_calendar(width=200, height=EPD_HEIGHT):
     red_layer.paste(red_card, (0, 140))
     black_layer.paste(black_card, (0, 140))
 
-    red_card, black_card = weather_simple(200, 170)
+    red_card, black_card = weather_simple(width, 170)
 
     red_layer.paste(red_card, (0, 287))
     black_layer.paste(black_card, (0, 287))
@@ -709,27 +712,27 @@ def server():
 
     even_day = (NOW.day % 2 == 0)
 
-    red_card_layer, black_card_layer = four_quadrants(even_day, width=EPD_WIDTH - 202)
+    red_card_layer, black_card_layer = four_quadrants(even_day, width=EPD_WIDTH - 182)
 
-    red_calendar_card, black_calendar_card = today_calendar()
+    red_calendar_card, black_calendar_card = today_calendar(180)
 
     if even_day:
         red_layer.paste(red_card_layer, (0, 0))
         black_layer.paste(black_card_layer, (0, 0))
 
-        red_layer.paste(red_calendar_card, (EPD_WIDTH - 200, 0))
-        black_layer.paste(black_calendar_card, (EPD_WIDTH - 200, 0))
+        red_layer.paste(red_calendar_card, (EPD_WIDTH - 180, 0))
+        black_layer.paste(black_calendar_card, (EPD_WIDTH - 180, 0))
 
-        black_draw.line((EPD_WIDTH - 202, 0, EPD_WIDTH - 202, EPD_HEIGHT), 0, 2)
+        black_draw.line((EPD_WIDTH - 182, 0, EPD_WIDTH - 182, EPD_HEIGHT), 0, 2)
 
     else:
         red_layer.paste(red_calendar_card, (0, 0))
         black_layer.paste(black_calendar_card, (0, 0))
 
-        red_layer.paste(red_card_layer, (202, 0))
-        black_layer.paste(black_card_layer, (202, 0))
+        red_layer.paste(red_card_layer, (182, 0))
+        black_layer.paste(black_card_layer, (182, 0))
 
-        black_draw.line((200, 0, 200, EPD_HEIGHT), 0, 2)
+        black_draw.line((180, 0, 180, EPD_HEIGHT), 0, 2)
 
     black_layer.save('black.bmp')
     red_layer.save('red.bmp')
