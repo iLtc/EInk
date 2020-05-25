@@ -197,11 +197,11 @@ def google_events_simple():
         end = datetime.datetime.strptime(event['end']['dateTime'], '%Y-%m-%dT%H:%M:%S%z')
 
         results.append({
-            'left': '[{:02d}:{:02d}]'.format(start.hour, start.minute) if start > NOW else '',
+            'left': '{:02d}:{:02d}'.format(start.hour, start.minute) if start > NOW else '',
             'left_red': True if start <= (NOW + datetime.timedelta(hours=3)) else False,
             'main': event['summary'],
             'main_red': True if NOW >= start else False,
-            'right': '[{:02d}:{:02d}]'.format(end.hour, end.minute) if start <= NOW else '',
+            'right': '{:02d}:{:02d}'.format(end.hour, end.minute) if start <= NOW else '',
             'right_red': True
         })
 
@@ -331,6 +331,34 @@ def todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not
 
         else:
             if 'due' in task and task['due']['date'] <= today:  # Urgent
+                urgent_not_important.append(item)
+
+            else:
+                not_urgent_not_important.append(item)
+
+
+def todo_tasks_new(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important):
+    data = requests.get(config.OMNIFOCUS_API).json()
+
+    for task in data:
+        item = {
+            'left': task['due'],
+            'left_red': False,
+            'main': task['name'],
+            'main_red': False,
+            'right': '[{}]'.format(task['project']),
+            'right_red': False
+        }
+
+        if task['important']:
+            if task['urgent']:
+                urgent_important.append(item)
+
+            else:
+                not_urgent_important.append(item)
+
+        else:
+            if task['urgent']:
                 urgent_not_important.append(item)
 
             else:
@@ -467,8 +495,8 @@ def quadrant_card(items, width, height):
     red_layer_draw = ImageDraw.Draw(red_layer)
     black_layer_draw = ImageDraw.Draw(black_layer)
 
-    font = ImageFont.truetype('fonts/timr45w.ttf', 18)
-    h_offset = -9
+    font = ImageFont.truetype('fonts/timr45w.ttf', 16)
+    h_offset = -8
 
     if len(items) == 0:
         text = 'All down! Good job!'
@@ -479,7 +507,7 @@ def quadrant_card(items, width, height):
 
         black_layer_draw.text((x, y), text, font=font, fill=0)
 
-        h_offset += 31
+        h_offset += 27
 
         black_layer_draw.line((0, h_offset, width, h_offset), 0, 1)
 
@@ -494,12 +522,14 @@ def quadrant_card(items, width, height):
         y = h / 2 + h_offset
 
         lw, _ = font.getsize(item['left'])
-        lx = 0
+        lx = 1
 
         rw, _ = font.getsize(item['right'])
         rx = width - rw
 
-        while width - lw - rw - 10 < mw:
+        space = (3 if lw > 0 else 0) + (3 if rw > 0 else 0)
+
+        while width - lw - rw - space < mw:
             item['main'] = item['main'][:-4] + '...'
             mw, _ = font.getsize(item['main'])
 
@@ -507,7 +537,7 @@ def quadrant_card(items, width, height):
             if lw > 0:
                 mx = lw + 5
             else:
-                mx = 0
+                mx = 1
         else:
             mx = item['main_x']
 
@@ -526,22 +556,21 @@ def quadrant_card(items, width, height):
         else:
             black_layer_draw.text((rx, y), item['right'], font=font, fill=0)
 
-        h_offset += 31
+        h_offset += 27
 
         black_layer_draw.line((0, h_offset, width, h_offset), 0, 1)
 
         h_offset += -6
 
-        # if h_offset + 2 * h >= height and len(items) - count > 1:
-        #     text = 'And {} more ......'.format(len(items) - count)
-        #
-        #     w, h = font.getsize(text)
-        #     x = width / 2 - w / 2
-        #     y = h / 2 + h_offset
-        #
-        #     red_layer_draw.text((x, y), text, font=font, fill=0)
+        if h_offset + 2.5 * h >= height and len(items) - count > 1:
+            text = 'And {} more ...'.format(len(items) - count)
 
-        if h_offset + h >= height:
+            w, h = font.getsize(text)
+            x = width / 2 - w / 2
+            y = (height - h_offset) / 2 + h_offset - h / 2
+
+            red_layer_draw.text((x, y), text, font=font, fill=0)
+
             break
 
     return red_layer, black_layer, items[count:]
@@ -554,7 +583,7 @@ def four_quadrants(even_day=True, width=EPD_WIDTH, height=EPD_HEIGHT, header_h=H
     not_urgent_not_important = []
 
     # google_events(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
-    todo_tasks(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
+    todo_tasks_new(urgent_important, not_urgent_important, urgent_not_important, not_urgent_not_important)
     habitica(urgent_not_important)
     # weather(not_urgent_not_important)
 
